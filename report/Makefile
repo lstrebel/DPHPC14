@@ -7,6 +7,8 @@ all: $(patsubst %.tex,%.pdf,$(wildcard *.tex))
 
 %.dvi: %.tex
 	latex $<
+	bibtex report.aux
+	latex $<
 	latex $<
 
 %.ps: %.dvi

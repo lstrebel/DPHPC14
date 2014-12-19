@@ -83,10 +83,19 @@ Now you state what you do in this paper. In our example:
 presenting a sorting implementation that is
 faster for some sizes as all the other ones.
 
-\mypar{Related work} Next, you have to give a brief overview of
-related work. For a report like this, anywhere between 2 and 8
-references. Briefly explain what they do. In the end contrast to what
-you do to make now precisely clear what your contribution is.
+\mypar{Related work} 
+%Next, you have to give a brief overview of
+%related work. For a report like this, anywhere between 2 and 8
+%references. Briefly explain what they do. In the end contrast to what
+%you do to make now precisely clear what your contribution is.
+In this section we will give a brief overview of related work. In the first part we will discuss the work covering the top-down-bottom-up hybrid approach and in the second part an approach that focuses on avoiding atomic operations.
+\newline
+%Hybrid:
+\cite{6691600}
+
+\cite{beamer2011searching}
+%Avoid atomic
+Berrendorf \cite{Berrendorf:14} describes a technique to avoid atomic operations in a generalized scenario. The scenario is given as an if-statement followed by some operations that change a state, where multiple threads might execute the predicate and execute the operations afterwards. The operations need to change the state to the same value if executed multiple times otherwise there exists a race condition, i.e. the change of the distance of a visited vertex to the value of the level or the addition of a vertex to the next frontier. The trade-off is that doing a BFS this way can result in additional work any unvisited vertex may get added multiple times.
 
 \section{Background: Whatever the Background is}\label{sec:background}
 
@@ -135,7 +144,7 @@ For sorting you would talk about the input sizes. For a tool that performs NUMA 
 \mypar{Results}
 Next divide the experiments into classes, one paragraph for each. In each class of experiments you typically pursue one questions that then is answered by a suitable plot or plots. For example, first you may want to investigate the performance behavior with changing input size, then how your code compares to external benchmarks.
 
-For some tips on benchmarking including how to create a decent viewgraph see pages 22--27 in \cite{Pueschel:10}.
+For some tips on benchmarking including how to create a decent viewgraph see pages 22--27 in
 
 {\bf Comments:}
 \begin{itemize}
@@ -196,7 +205,7 @@ convinced you are the reader knows it.
 high quality. Many people may read it and the quality makes a big difference.
 In this class, the quality is part of the grade.
 
-\item Books helping you to write better: \cite{Higham:98} and \cite{Strunk:00}.
+\item Books helping you to write better:
 
 \item Conversion to pdf (latex users only): 
 
