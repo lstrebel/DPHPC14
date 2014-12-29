@@ -5,6 +5,7 @@
 
 \documentclass[letterpaper]{article}
 \usepackage{spconf,amsmath,amssymb,graphicx}
+\graphicspath{{figures/}}
 
 % Example definitions.
 % --------------------
@@ -63,25 +64,29 @@ should write the abstract last.
 
 \section{Introduction}\label{sec:intro}
 
-Do not start the introduction with the abstract or a slightly modified
-version. It follows a possible structure of the introduction. 
-Note that the structure can be modified, but the
-content should be the same. Introduction and abstract should fill at most the first page, better less.
+%Do not start the introduction with the abstract or a slightly modified
+%version. It follows a possible structure of the introduction. 
+%Note that the structure can be modified, but the
+%content should be the same. Introduction and abstract should fill at most the first page, better less.
 
-\mypar{Motivation} The first task is to motivate what you do.  You can
-start general and zoom in one the specific problem you consider.  In
-the process you should have explained to the reader: what you are doing,
-why you are doing, why it is important (order is usually reversed).
+\mypar{Motivation}
+%The first task is to motivate what you do.  You can
+%start general and zoom in one the specific problem you consider.  In
+%the process you should have explained to the reader: what you are doing,
+%why you are doing, why it is important (order is usually reversed).
+%
+%For example, if my result is the fastest sorting implementation ever, one
+%could roughly go as follows. First explain why sorting is important
+%(used everywhere with a few examples) and why performance matters (large datasets,
+%realtime). Then explain that fast implementations are very hard and
+%expensive to get (memory hierarchy, vector, parallel). 
+%
+%Now you state what you do in this paper. In our example: 
+%presenting a sorting implementation that is
+%faster for some sizes as all the other ones.
+Breadth-first search is a graph traversing algorithm which is used in many applications. Some examples are finding connected components, determining a shortest-path in a navigation system or computing the maximum flow in a network. As real-world graphs can get very large, for example the US road network graph contains roughly 24 million vertices and 57 million edges, the need for fast implementations is high.
 
-For example, if my result is the fastest sorting implementation ever, one
-could roughly go as follows. First explain why sorting is important
-(used everywhere with a few examples) and why performance matters (large datasets,
-realtime). Then explain that fast implementations are very hard and
-expensive to get (memory hierarchy, vector, parallel). 
-
-Now you state what you do in this paper. In our example: 
-presenting a sorting implementation that is
-faster for some sizes as all the other ones.
+In this paper, we will discuss multiple approaches and compare their performance on three different platforms.
 
 \mypar{Related work} 
 %Next, you have to give a brief overview of
@@ -89,13 +94,15 @@ faster for some sizes as all the other ones.
 %references. Briefly explain what they do. In the end contrast to what
 %you do to make now precisely clear what your contribution is.
 In this section we will give a brief overview of related work. In the first part we will discuss the work covering the top-down-bottom-up hybrid approach and in the second part an approach that focuses on avoiding atomic operations.
-\newline
+
 %Hybrid:
 \cite{6691600}
-
 \cite{beamer2011searching}
+
 %Avoid atomic
 Berrendorf \cite{Berrendorf:14} describes a technique to avoid atomic operations in a generalized scenario. The scenario is given as an if-statement followed by some operations that change a state, where multiple threads might execute the predicate and execute the operations afterwards. The operations need to change the state to the same value if executed multiple times otherwise there exists a race condition, i.e. the change of the distance of a visited vertex to the value of the level or the addition of a vertex to the next frontier. The trade-off is that doing a BFS this way can result in additional work any unvisited vertex may get added multiple times.
+
+
 
 \section{Background: Whatever the Background is}\label{sec:background}
 
@@ -134,12 +141,20 @@ Mention and cite any external resources that you used including libraries or oth
 Here you evaluate your work using experiments. You start again with a
 very short summary of the section. The typical structure follows.
 
-\mypar{Experimental setup} Specify the platform (processor, frequency, maybe OS, maybe cache sizes)
-as well as the compiler, version, and flags used. If your work is about performance, 
-I strongly recommend that you play with optimization flags and consider also icc for additional potential speedup.
+\mypar{Experimental setup}
+%Specify the platform (processor, frequency, maybe OS, maybe cache sizes)
+%as well as the compiler, version, and flags used. If your work is about performance, 
+%I strongly recommend that you play with optimization flags and consider also icc for additional potential speedup.
+%
+%Then explain what kind of benchmarks you ran. The idea is to give enough information so the experiments are reproducible by somebody else on his or her code.
+%For sorting you would talk about the input sizes. For a tool that performs NUMA optimization, you would specify the programs you ran.
+We run experiments on three different platforms.
 
-Then explain what kind of benchmarks you ran. The idea is to give enough information so the experiments are reproducible by somebody else on his or her code.
-For sorting you would talk about the input sizes. For a tool that performs NUMA optimization, you would specify the programs you ran.
+The first platform is the EULER cluster which is operated by the HPC Group of ETH. We had access to one node with a 12-core Intel Xeon E5-2697v2 processors (2.7 GHz nominal, 3.0-3.5 GHz peak). It supports hyper-threading, so we ran our algorithms with up to 24 threads. On this platform, we used the gcc compiler with the -O2 flag.
+
+The next platform we ran our algorithms on is the Xeon Phi provided through the class.
+
+Lastly, we also used an AMD FX-8350 (4GHz x8, 8Gb, W2k3).
 
 \mypar{Results}
 Next divide the experiments into classes, one paragraph for each. In each class of experiments you typically pursue one questions that then is answered by a suitable plot or plots. For example, first you may want to investigate the performance behavior with changing input size, then how your code compares to external benchmarks.
