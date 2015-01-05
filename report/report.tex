@@ -95,7 +95,6 @@ Breadth-first search (BFS) is a graph traversing algorithm which is used in many
 
 In this paper, we will discuss multiple approaches and compare their performance on three different platforms.
 
-
 \mypar{Related work} 
 %Next, you have to give a brief overview of
 %related work. For a report like this, anywhere between 2 and 8
@@ -104,11 +103,12 @@ In this paper, we will discuss multiple approaches and compare their performance
 In this section we will give a brief overview of related work. In the first part we will discuss the work covering the top-down-bottom-up hybrid approach and in the second part an approach that focuses on avoiding atomic operations.
 
 % Hybrid:
-Beamer et al.\cite{beamer2011searching} report a different algorithm to deal with the performance issues encountered when designing a BFS algorithm. The proposed hybrid algorithm combines the usual top down approach with a new bottom up part. In the bottom up part a level is processed by searching a parent for all unvisited vertices where a parent is only valid if it is a neighbour of the unvisited vertex. This is advantageous for small-world graphs because it saves accesses and data processing when a large fraction of the vertices are in the frontier. To get optimal results a hybrid algorithm is proposed where a heuristic switching criteria controls the use of top down or bottom up step depending on the size of the frontier and a predicted size of the next frontier. Yasui et al.\cite{6691600} describe an implementation of such a hybrid algorithm for kronecker and R-MAT graphs as well as a detailed description of the heuristic switching parameters.
+Beamer et al. \cite{beamer2011searching} report a different algorithm to deal with the performance issues encountered when designing a BFS algorithm. The proposed hybrid algorithm combines the usual top down approach with a new bottom up part. In the bottom up part a level is processed by searching a parent for all unvisited vertices where a parent is only valid if it is a neighbour of the unvisited vertex. This is advantageous for small-world graphs because it saves accesses and data processing when a large fraction of the vertices are in the frontier. To get optimal results a hybrid algorithm is proposed where a heuristic switching criteria controls the use of top down or bottom up step depending on the size of the frontier and a predicted size of the next frontier. Yasui et al. \cite{6691600} describe an implementation of such a hybrid algorithm for kronecker and R-MAT graphs as well as a detailed description of the heuristic switching parameters.
 
 
 % Avoid atomic
-Berrendorf\cite{Berrendorf:14} describes a technique to avoid atomic operations in a generalized scenario. The scenario is given as an if-statement followed by some operations that change a state, where multiple threads might execute the predicate and execute the operations afterwards. The operations need to change the state to the same value if executed multiple times otherwise there exists a race condition, i.e. the change of the distance of a visited vertex to the value of the level or the addition of a vertex to the next frontier. The trade-off is that doing a BFS this way can result in additional work, since any unvisited vertex may get added multiple times.
+Berrendorf \cite{Berrendorf:14} describes a technique to avoid atomic operations in a generalized scenario. The scenario is given as an if-statement followed by some operations that change a state, where multiple threads might execute the predicate and execute the operations afterwards. The operations need to change the state to the same value if executed multiple times otherwise there exists a race condition, i.e. the change of the distance of a visited vertex to the value of the level or the addition of a vertex to the next frontier. The trade-off is that doing a BFS this way can result in additional work, since any unvisited vertex may get added multiple times.
+
 
 
 \section{Background: Breadth-first search}\label{sec:background}
@@ -118,12 +118,11 @@ In this section we will give a brief overview over the idea of breadth-first sea
 
 
 \mypar{Breadth-first search}
-
 Breadth-first search (BFS) is a graph traversal algorithm which starts at a source and either travels until it finds a specific vertice or until it has explored all connected vertices. In the first step all vertices adjacent to the source are explored and stored in some data structure (called frontier or next) as well as marked as visited. In the second step the newly visited vertices become the new sources (called neighbours or current) from which the search continues by repeating this step. Doing a traversal in this way assures that all the nodes at the same distance to the source are explored on the same level before any vertices with greater distance can be explored. 
 
 The desired output of a BFS can differ depending on where it is applied. For example with minimal modifications BFS can deliever a predecessor map, where every vertex points to only one parent, or a distance map, where the distance to the source for every vertex is saved. Since the predecessor map is not necessarily unique, we choose to return a distance map as our output to make verification of correctness simpler.  
 
-The sequential version of a BFS can be implemented using a single queue and has a theoretical asymptotic runtime of $\mathcal{O}(\left|V\right|+\left|E\right|)$ where $\left|V\right|$ is the number of vertices and $\left|E\right|$ is the number of edges of the connected graph.
+The sequential version of a BFS can be implemented using a single queue and has a theoretical asymptotic runtime of $\mathcal{O}(\lvert V\rvert + \lvert E\rvert)$ where $\lvert V\rvert$ is the number of vertices and $\lvert E\rvert$ is the number of edges of the connected graph.
 
 
 \mypar{Graphs}
@@ -135,7 +134,7 @@ The sequential version of a BFS can be implemented using a single queue and has 
 % nonlevel: using 1xCAS to check visited and  1xOMP critical for the distance update (needs to see if unvisited or visited from further away), frontier is a single queue. if a thread finishes with his part he waits for the others to finish (no loadbalancing). Idea from talking with Timo.
 % nonlevel with work stealing. Idea is for threads that are finished with their part to steal work from a randomly choosen other thread. Only works with too much synchronization (slow) at the moment. Idea from talking with Timo.
 
-\section{Your Proposed Method}\label{sec:yourmethod}
+\section{Our implementations}\label{sec:yourmethod}
 
 %Now comes the ``beef'' of the report, where you explain what you
 %did. Again, organize it in paragraphs with titles. As in every section
