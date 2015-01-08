@@ -39,7 +39,7 @@
 		%%| should write the abstract last.
 	\end{abstract}
 
-	\section{Introduction}\label{sec:intro} % Roughtly page + ~4 references.
+	\section{Introduction}\label{sec:intro} % Roughtly page + TODO:~4 references.
 		Graph is one of the most powerful and widely used abstract data type, because it is convenient for representation of wide range of real-world objects in computer applications.
 		Most of the graph applications and appropriate algorithms involve graph traversals, during which knowledge's about graph is updated as each node and vertex become visited. 
 		Depth-first search (DFS) and Breadth-first search (BFS) are two basic strategies for graph traversal and searching in graph.
@@ -64,27 +64,70 @@
 		Instead it must be considered as a source of more general approach to the implementation of BFS for the environment of particular kind of SMA system.
 		To achieve most optimal approach for particular computer system investigation of different variants of parallel BFS and most suitable optimizations must be done for the environment of system of interest, because our results tell us that the efficiency of BFS itself and optimizations used in it heavily depends on the target environment. 
 	
-	% \section{Related work}\label{sec:rewo} % Roughtly column. + ~8 references.
-	% \section{Design and implementation}\label{sec:deim} % Roughtly page + half a column. + 1 code snippet
 	% \section{Experiments}\label{sec:expe} % Roughtly two pages - half a column. + 4 plots
 	% \section{Discussion}\label{sec:disc} % Roughtly column. + ~1-2 references + 1 table
 	% \section{Summary and Conclusion}\label{sec:suco} % Roughtly half a column.
 
-	\mypar{Related work} 
-	%Next, you have to give a brief overview of
-	%related work. For a report like this, anywhere between 2 and 8
-	%references. Briefly explain what they do. In the end contrast to what
-	%you do to make now precisely clear what your contribution is.
-	In this section we will give a brief overview of related work. In the first part we will discuss the work covering the top-down-bottom-up hybrid approach and in the second part an approach that focuses on avoiding atomic operations.
+	\section{Related work} \label{sec:rewo} % Roughtly column. + ~8 references.
+		BFS is not an easy candidate for parallelization.
+		It is inherently memory intensive and have pure spacial locality which introduces significant performance loss on the today computer systems with growing gap between CPU performance and memory performance and increasing memory latencies.
+		As a result scalability of parallel version of BFS will be bound by the performance characteristics of the memory subsystem of the target computer system.. 
+		Nevertheless intensive use of BFS in the wide range of the applications create high interest in the most efficient and scalable versions of parallel BFS.
+		As a result a number of papers was published in this field. 
+		
+		Beamer et al.\cite{beamer2011searching} report a different algorithm to deal with the performance issues encountered when designing a BFS algorithm. 
+		The proposed hybrid algorithm combines the usual top down approach with a new bottom up part. 
+		In the bottom up part a level is processed by searching a parent for all unvisited vertices where a parent is only valid if it is a neighbour of the unvisited vertex. 
+		This is advantageous for small-world graphs because it saves accesses and data processing when a large fraction of the vertices are in the frontier. 
+		To get optimal results a hybrid algorithm is proposed where a heuristic switching criteria controls the use of top down or bottom up step depending on the size of the frontier and a predicted size of the next frontier. 
+		Yasui et al.\cite{6691600} describe an implementation of such a hybrid algorithm for kronecker and R-MAT graphs as well as a detailed description of the heuristic switching parameters.
 	
-	% Hybrid:
-	Beamer et al.\cite{beamer2011searching} report a different algorithm to deal with the performance issues encountered when designing a BFS algorithm. The proposed hybrid algorithm combines the usual top down approach with a new bottom up part. In the bottom up part a level is processed by searching a parent for all unvisited vertices where a parent is only valid if it is a neighbour of the unvisited vertex. This is advantageous for small-world graphs because it saves accesses and data processing when a large fraction of the vertices are in the frontier. To get optimal results a hybrid algorithm is proposed where a heuristic switching criteria controls the use of top down or bottom up step depending on the size of the frontier and a predicted size of the next frontier. Yasui et al.\cite{6691600} describe an implementation of such a hybrid algorithm for kronecker and R-MAT graphs as well as a detailed description of the heuristic switching parameters.
+		Berrendorf\cite{Berrendorf:14} describes a technique to avoid atomic operations in a generalized scenario. 
+		The scenario is given as an if-statement followed by some operations that change a state, where multiple threads might execute the predicate and execute the operations afterwards. 
+		The operations need to change the state to the same value if executed multiple times otherwise there exists a race condition, i.e. the change of the distance of a visited vertex to the value of the level or the addition of a vertex to the next frontier. 
+		The trade-off is that doing a BFS this way can result in additional work, since any unvisited vertex may get added multiple times.
+		
+		In our proposed technique we moves future at the way of avoiding atomic operations and intra-level synchronization at all.   
+		The only synchronization point left in proposed algorithm is implicit barrier between processing of different levels of the graph.
+		
+		In addition to this we have compared a number of different approaches based on different synchronization primitives and techniques and load balancing strategies.
 	
-	
-	% Avoid atomic
-	Berrendorf\cite{Berrendorf:14} describes a technique to avoid atomic operations in a generalized scenario. The scenario is given as an if-statement followed by some operations that change a state, where multiple threads might execute the predicate and execute the operations afterwards. The operations need to change the state to the same value if executed multiple times otherwise there exists a race condition, i.e. the change of the distance of a visited vertex to the value of the level or the addition of a vertex to the next frontier. The trade-off is that doing a BFS this way can result in additional work, since any unvisited vertex may get added multiple times.
-	
-	
+	\section{Design and implementation}\label{sec:deim} % Roughtly page + half a column. + 1 code snippet
+		The goal of our efforts is to achieve most efficient and scalable algorithm of parallel BFS for Shared Memory Architectures. 
+
+		\subsection{Possible directions of performance boosting}
+			There are three main directions of performance boosting in the way of making BFS parallel.
+			
+			\textbf{Improvement of cache utilization improvement.}
+			It is not a secret that due to the big gap between performance of CPU subsystem performance and memory subsystem performance of the modern computer systems and latencies of memory access makes performance of the algorithms highly sensitive to the provided CPU cache utilization. 
+			Introduction of multicore computer systems made the problem even more complex because now we are forced to thinks about careful splitting of the active data set between all available processors to avoid cache misses introduced by cache lines flip-flopping. 
+			Unfortunately in the case of the BFS we are forced to work with data set with inherently pure spatial locality. 
+			Due to this this way of optimization was rejected.
+			
+			\textbf{Load balancing improvement.} 
+			Goal of this approach is to achieve highest possible level of overall utilization of available processor elements via avoidance of the idle time of CPUs introduced by waiting for new job arriving.
+			It is one of the promising approaches because classical approach to BFS parallelization relies on sequential graph level processing where each level is processed in parallel.
+			As a result all CPU finished they work are forced to wait until the moment when current level processing will be accomplished by rest still busy processors.
+			Nonetheless, this direction was rejected in favor of the synchronization avoidance. 
+			
+			\textbf{Avoidance of synchronization.}
+			Synchronization is expensive but necessary component of the almost all parallel algorithms.
+			Synchronization is expensive in both dimensions it usually takes a lot of CPU cycles in absolute numbers and reduce scalability.
+			Our main design direction was figure out of the most cheap scheme of synchronization which will still provide consistency.
+			Ideally we would like to eliminate synchronization at all.
+			
+		\subsection{Optimistic BFS algorithm design}
+			Proposed algorithm was designed for the environment of the OpenMP and due to this employs data-parallelism approach. 
+			It accepts two input parameters: graph description and index of the root node, where graph description is a list of lists in which each top-level list denotes of the graph vertexes and bottom level list enumerates all neighbors of the appropriate vertex thus denoting all edges connected to it and returns distance map for the specified root node.
+			
+			The core of proposed algorithm is classical. 
+			It is level by level sequential top-down walking through the graph where on each iteration we discover all unvisited chills of the node presenting the current level.
+			
+			Algorithm utilize $4 \cdot number\_of\_the\_node$ bytes of memory allocated in 4 equal chunks:
+			\begin{enumerate}
+				\item x
+			\end{enumerate}
+			
 	\section{Background: Breadth-first search}\label{sec:background}
 	
 	
