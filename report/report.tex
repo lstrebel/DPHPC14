@@ -135,6 +135,34 @@
 	% \section{Discussion}\label{sec:disc} % Roughtly column. + ~1-2 references + 1 table
 	% \section{Summary and Conclusion}\label{sec:suco} % Roughtly half a column.
 
+
+	\section{Background: Breadth-first search}\label{sec:background}
+	
+	
+	In this section, we will give a brief overview over the idea of breadth-first search and its sequential asymptotic runtime cost, as well as a short discussion of different graphs and graph properties. 
+	
+	
+	\mypar{Breadth-first search}
+	Breadth-first search (BFS) is a graph traversal algorithm which starts at a source vertex and either travels until it finds a specific vertex or until it has explored all connected vertices. 
+	In the first step, all vertices adjacent to the source are explored and stored in some data structure (called frontier or next) as well as marked as visited. 
+	In the second step, the newly visited vertices become the new sources (called neighbours or current) from which the search continues by repeating this step. 
+	Doing a traversal this way assures that all the nodes at the same distance to the source are explored before any vertices with greater distance can be explored. 
+	All the vertices in the same distance to the source are called level.
+	
+	The desired output of a BFS can differ depending on where it is applied. With minimal modifications BFS could deliver a predecessor map, where every vertex points to only one parent, or a distance map, where the distance to the source is stored for every vertex. Since the predecessor map is not necessarily unique, we choose to return a distance map as our output to make verification of correctness simpler.  
+	
+	The sequential version of a BFS can be implemented using a single queue and has a theoretical asymptotic runtime of $\mathcal{O}(\lvert V\rvert + \lvert E\rvert )$, where $\lvert V\rvert$ is the number of vertices and $\lvert E\rvert$ the number of edges in the connected graph.
+	
+	
+	\mypar{Graphs}
+	As previously mentioned graphs are a widely used abstract data type, which depending on their source and use can have widely different properties which in turn account for strong variations in the performance of BFS and other graph algorithms.
+	
+	To account for this we used real world graphs and specific synthetic graphs provided by the University of Florida Sparse Matrix Collection \cite{SparseMatrixCollection}, notably some graphs from the DIMACS10 challenge, in our test and experimental cases.
+	The mentioned synthetic graphs are mostly so called Kronecker graphs \cite{Leskovec:2010:KGA:1756006.1756039}, which are generative network graphs that obey the main static network patterns observed in real networks.
+	Especially the small-world property is worth mentioning since it provides a reasonable assumption that a given node in a network has a large enough neighbourhood so that a parallel BFS can be useful.	
+	
+
+
 	\section{Related work} \label{sec:rewo} % Roughtly column. + ~8 references.
 		BFS is not an easy candidate for parallelisation.
 		It is inherently memory intensive and has pure spacial locality which introduces significant performance loss on today's computer systems with the growing gap between CPU performance, memory performance and increasing memory latencies.
@@ -160,6 +188,8 @@
 		In addition to this, we have compared a number of different approaches based on different synchronization primitives and techniques and load balancing strategies.
 	
 	
+	
+	
 	\section{Design and implementation}\label{sec:deim} % Roughtly page + half a column. + 1 code snippet
 		The goal of our efforts is to achieve the most efficient and scalable algorithm of parallel BFS for Shared Memory Architectures. 
 
@@ -168,21 +198,92 @@
 			
 			\textbf{Improvement of cache utilization.}
 			It is not a secret that due to the big gap between the performance of CPU subsystems and the memory subsystem performance of modern computer systems, as well as latencies of memory access, make the performance of the algorithms highly sensitive to the provided CPU cache utilization. 
-			Introduction of multicore computer systems made the problem even more complex becaus  we are now forced to think about careful splitting of the active data set between all available processors to avoid cache misses introduced by cache lines flip-flopping. 
+			Introduction of multicore computer systems made the problem even more complex because  we are now forced to think about careful splitting of the active data set between all available processors to avoid cache misses introduced by cache lines flip-flopping. 
 			Unfortunately, in the case of the BFS, we are forced to work with a data set with inherently pure spatial locality. 
 			Due to this, this way of optimization was rejected.
 			
 			\textbf{Load balancing improvement.} 
 			Goal of this approach is to achieve highest possible level of overall utilization of all available processor elements by avoiding the idle time of CPUs introduced by waiting for the arrival of a new job.
-			It is one of the promising approaches, because the classical approach to BFS parallelization relies on a sequential graph level processing where each level is processed in parallel.
+			It is one of the promising approaches, because the classical approach to BFS parallelisation relies on a sequential graph level processing where each level is processed in parallel.
 			As a result, all CPUs that finished their work are forced to wait until the processing of the current level will be accomplished by other still busy processors.
-			Nonetheless, this direction was rejected in favor of the synchronization avoidance. 
+			Nonetheless, this direction was rejected in favour of the synchronization avoidance. 
 			
 			\textbf{Avoidance of synchronization.}
 			Synchronization is an expensive but necessary component of almost all parallel algorithms.
 			It is expensive in both dimensions, as synchronization usually takes many CPU cycles (in absolute numbers), which reduces scalability. % What is meant with this sentence? Do you mean that it takes a lot of CPU cycles, and because of this reduces scalability?
 			Our main design direction was figuring out of the cheapest scheme of synchronization while still providing consistency.
 			Ideally, we would like to eliminate synchronization at all.
+			
+			
+
+	
+		% TODO
+		% hybrid: doing topdown or bottum up, depending on heuristic switch. uses 1x OMP critical section in topdown part and localneighbourhoods + prefix sum to add them together at each level in the bottom up part. Idea from paper by Yasui et al
+		% nonlevel: using 1xCAS to check visited and  1xOMP critical for the distance update (needs to see if unvisited or visited from further away), frontier is a single queue. if a thread finishes with his part he waits for the others to finish (no loadbalancing). Idea from talking with Timo.
+		% nonlevel with work stealing. Idea is for threads that are finished with their part to steal work from a randomly choosen other thread. Only works with too much synchronization (slow) at the moment. Idea from talking with Timo.
+		
+		\subsection{Different approaches}\label{sec:approaches}
+		
+		%Now comes the ``beef'' of the report, where you explain what you
+		%did. Again, organize it in paragraphs with titles. As in every section
+		%you start with a very brief overview of the section.
+		%
+		%In this section, structure is very important so one can follow the technical content.
+		%
+		%Mention and cite any external resources that you used including libraries or other code.
+		
+		We implemented many different algorithms and multiple variants for most of them. They return a distance map from one source vertex to all reachable vertices in the graph.
+		
+		All our implementations are based on OpenMP for synchronization.
+		
+		
+		\mypar{Topdown}
+		A lot of our approaches are based on a simple topdown algorithm. 
+		The idea is to do a level-synchronous traversal of the graph by keeping record of the vertices in the current as well as those in the next level (``frontier'' and ``neighbour'') in two data structures of the same type. 
+		We then set the frontier to the current neighbours after each level. 
+		This leads to an implicit barrier, as the work done by the different threads has to be synchronized. 
+		We experimented with different data structures and synchronization methods.
+		
+		% naive
+		% using 1x OMP critical section (check visited and add to frontier), frontier is a vector to allow easy dynamic splitting after each level (load balancing between threads). basically naive implementation
+		The naive variant of the topdown algorithm has a global standard vector for the frontier to allow easy dynamic splitting between the threads in each level. 
+		This balances the load between threads, however it has a significant overhead because it relies on a critical section (\verb+OMP critical+) for checking whether the vertices were already visited and inserting them into the neighbour data structure.
+		
+		% topdownCAS
+		% using CAS (check visited) + OMP critical section (add to frontier), also vector frontier. Idea from paper by Berrendorf
+		To improve the naive implementation, we first tried to get rid of the critical section, as this produced a lot of overhead. 
+		We attempted this by using an atomic, the built-in \verb+__sync_val_compare_and_swap+ (CAS), to atomically check whether a vertex was visited and setting the correct distance. 
+		In addition to the atomic, this variant uses a local neighbourhood data structure (standard vector) to be able to do without a critical section. 
+		Only at the end of each level, a lock (\verb+omp_lock_t+) is needed to combine the local neighbourhoods to a global one, which can then be distributed between the threads for the next level. 
+		This is an idea adapted from Berrendorf \cite{Berrendorf:14}.
+		
+		% topdown_ifCAS
+		% same as topdownCAS but doing a nonatomic visited check before each CAS, Idea from paper by Berrendorf
+		An extended version of the algorithm before does a non-atomic check if a vertex visited before each CAS. 
+		This lets us treat the cases where the vertex had already been visited without any synchronization.
+		
+		% maybe better leave this method out, as it is fairly similar to the optimistic approach. The only difference lies in the data structures used.
+		% topdown_nonatomic
+		% doing the visited check nonatomic (adds additional work but no race condition), using localneighbourhood and OMP lock to add them to the global neighbourhood after a thread has looked at all neighbours from one node. Idea from paper by Berrendorf
+	%	Also inspired by Berrendorf \cite{Berrendorf:14} is the idea to remove atomics altogether. 
+	%	This results in a race condition where additional work for the next level is created, as some vertices might be added to the neighbours multiple times. 
+	%	However, expensive atomics are omitted, which results in a trade-off between the additional time from the added work and the faster runtime by leaving out the CAS. 
+	%	This algorithm still uses a local neighbourhood and a lock when combining them.
+		
+		% parallelbfs1
+		% using 3x bool arrays for visited, looping over all nodes on each level, frontier is a mask
+	%	Instead of using a standard vector for the frontier and the neighbour, one of our implementation relies on a bool array for all data structures (visited vertices, frontier, neighbour). 
+	%	This makes it possible to remove all critical sections, as the insertion of an element into a vector was what made them necessary in the first place. Similarly to the algorithm before, there might be additional work due to avoiding atomics. 
+	%	The downside of this implementation is that in each level, you have to loop through all the vertices, not just the current frontier, to be able to explore from there. 
+	%	Depending on the structure of the graph, this can be much more work.
+		
+		% TODO
+		% tbb_parallelqueue
+		% doing a topdown method using 1x OMP single for level synchronization and TBB concurrentqueue as a concurrent frontier
+		
+		% even_odd_parallelqueue
+		% using only implicit OMP barrier for level synchronization. switching between two TBB parallelqueue frontiers			
+				
 			
 		\subsection{Optimistic BFS algorithm design}
 			Our proposed algorithm was designed for the environment of OpenMP and due to this a employs data-parallelism approach. 
@@ -250,97 +351,97 @@
 
 						
 			
-	\section{Background: Breadth-first search}\label{sec:background}
-	
-	
-	In this section, we will give a brief overview over the idea of breadth-first search and its sequential asymptotic runtime cost, as well as a short discussion of different graphs and graph properties. 
-	
-	
-	\mypar{Breadth-first search}
-	Breadth-first search (BFS) is a graph traversal algorithm which starts at a source vertex and either travels until it finds a specific vertex or until it has explored all connected vertices. 
-	In the first step, all vertices adjacent to the source are explored and stored in some data structure (called frontier or next) as well as marked as visited. 
-	In the second step, the newly visited vertices become the new sources (called neighbours or current) from which the search continues by repeating this step. 
-	Doing a traversal this way assures that all the nodes at the same distance to the source are explored before any vertices with greater distance can be explored. 
-	All the vertices in the same distance to the source are called level.
-	
-	The desired output of a BFS can differ depending on where it is applied. Witih minimal modifications BFS could deliver a predecessor map, where every vertex points to only one parent, or a distance map, where the distance to the source is stored for every vertex. Since the predecessor map is not necessarily unique, we choose to return a distance map as our output to make verification of correctness simpler.  
-	
-	The sequential version of a BFS can be implemented using a single queue and has a theoretical asymptotic runtime of $\mathcal{O}(\lvert V\rvert + \lvert E\rvert )$, where $\lvert V\rvert$ is the number of vertices and $\lvert E\rvert$ the number of edges in the connected graph.
-	
-	
-	\mypar{Graphs}
-	As previously mentioned graphs are a widely used abstract data type, which depending on their source and use can have widely different properties which in turn account for strong variations in the performance of BFS and other graph algorithms.
-	
-	To account for this we used real world graphs and specific synthetic graphs provided by the University of Florida Sparse Matrix Collection \cite{SparseMatrixCollection}, notably some graphs from the DIMACS10 challenge, in our test and experimental cases.
-	The mentioned synthetic graphs are mostly so called Kronecker graphs \cite{Leskovec:2010:KGA:1756006.1756039}, which are generative network graphs that obey the main static network patterns observed in real networks.
-	Especially the small-world property is worth mentioning since it provides a reasonable assumption that a given node in a network has a large enough neighbourhood so that a parallel BFS can be useful.
-	
-	% TODO
-	% hybrid: doing topdown or bottum up, depending on heuristic switch. uses 1x OMP critical section in topdown part and localneighbourhoods + prefix sum to add them together at each level in the bottom up part. Idea from paper by Yasui et al
-	% nonlevel: using 1xCAS to check visited and  1xOMP critical for the distance update (needs to see if unvisited or visited from further away), frontier is a single queue. if a thread finishes with his part he waits for the others to finish (no loadbalancing). Idea from talking with Timo.
-	% nonlevel with work stealing. Idea is for threads that are finished with their part to steal work from a randomly choosen other thread. Only works with too much synchronization (slow) at the moment. Idea from talking with Timo.
-	
-	\section{Your Proposed Method}\label{sec:yourmethod}
-	
-	%Now comes the ``beef'' of the report, where you explain what you
-	%did. Again, organize it in paragraphs with titles. As in every section
-	%you start with a very brief overview of the section.
-	%
-	%In this section, structure is very important so one can follow the technical content.
-	%
-	%Mention and cite any external resources that you used including libraries or other code.
-	
-	We implemented many different algorithms and multiple variants for most of them. They return a distance map from one source vertex to all reachable vertices in the graph.
-	
-	All our implementations are based on OpenMP for synchronization.
-	
-	
-	\mypar{Topdown}
-	A lot of our approaches are based on a simple topdown algorithm. 
-	The idea is to do a level-synchronous traversal of the graph by keeping record of the vertices in the current as well as those in the next level (``frontier'' and ``neighbour'') in two data structures of the same type. 
-	We then set the frontier to the current neighbours after each level. 
-	This leads to an implicit barrier, as the work done by the different threads has to be synchronized. 
-	We experimented with different data structures and synchronization methods.
-	
-	% naive
-	% using 1x OMP critical section (check visited and add to frontier), frontier is a vector to allow easy dynamic splitting after each level (load balancing between threads). basically naive implementation
-	The naive variant of the topdown algorithm has a global standard vector for the frontier to allow easy dynamic splitting between the threads in each level. 
-	This balances the load between threads, however it has a significant overhead because it relies on a critical section (\verb+OMP critical+) for checking whether the vertices were already visited and inserting them into the neighbour data structure.
-	
-	% topdownCAS
-	% using CAS (check visited) + OMP critical section (add to frontier), also vector frontier. Idea from paper by Berrendorf
-	To improve the naive implementation, we first tried to get rid of the critical section, as this produced a lot of overhead. 
-	We attempted this by using an atomic, the built-in \verb+__sync_val_compare_and_swap+ (CAS), to atomically check whether a vertex was visited and setting the correct distance. 
-	In addition to the atomic, this variant uses a local neighbourhood data structure (standard vector) to be able to do without a critical section. 
-	Only at the end of each level, a lock (\verb+omp_lock_t+) is needed to combine the local neighbourhoods to a global one, which can then be distributed between the threads for the next level. 
-	This is an idea adapted from Berrendorf \cite{Berrendorf:14}.
-	
-	% topdown_ifCAS
-	% same as topdownCAS but doing a nonatomic visited check before each CAS, Idea from paper by Berrendorf
-	An extended version of the algorithm before does a non-atomic check if a vertex visited before each CAS. 
-	This lets us treat the cases where the vertex had already been visited without any synchronization.
-	
-	% maybe better leave this method out, as it is fairly similar to the optimistic approach. The only difference lies in the data structures used.
-	% topdown_nonatomic
-	% doing the visited check nonatomic (adds additional work but no race condition), using localneighbourhood and OMP lock to add them to the global neighbourhood after a thread has looked at all neighbours from one node. Idea from paper by Berrendorf
-%	Also inspired by Berrendorf \cite{Berrendorf:14} is the idea to remove atomics altogether. 
-%	This results in a race condition where additional work for the next level is created, as some vertices might be added to the neighbours multiple times. 
-%	However, expensive atomics are omitted, which results in a trade-off between the additional time from the added work and the faster runtime by leaving out the CAS. 
-%	This algorithm still uses a local neighbourhood and a lock when combining them.
-	
-	% parallelbfs1
-	% using 3x bool arrays for visited, looping over all nodes on each level, frontier is a mask
-%	Instead of using a standard vector for the frontier and the neighbour, one of our implementation relies on a bool array for all data structures (visited vertices, frontier, neighbour). 
-%	This makes it possible to remove all critical sections, as the insertion of an element into a vector was what made them necessary in the first place. Similarly to the algorithm before, there might be additional work due to avoiding atomics. 
-%	The downside of this implementation is that in each level, you have to loop through all the vertices, not just the current frontier, to be able to explore from there. 
-%	Depending on the structure of the graph, this can be much more work.
-	
-	% TODO
-	% tbb_parallelqueue
-	% doing a topdown method using 1x OMP single for level synchronization and TBB concurrentqueue as a concurrent frontier
-	
-	% even_odd_parallelqueue
-	% using only implicit OMP barrier for level synchronization. switching between two TBB parallelqueue frontiers
+%	\section{Background: Breadth-first search}\label{sec:background}
+%	
+%	
+%	In this section, we will give a brief overview over the idea of breadth-first search and its sequential asymptotic runtime cost, as well as a short discussion of different graphs and graph properties. 
+%	
+%	
+%	\mypar{Breadth-first search}
+%	Breadth-first search (BFS) is a graph traversal algorithm which starts at a source vertex and either travels until it finds a specific vertex or until it has explored all connected vertices. 
+%	In the first step, all vertices adjacent to the source are explored and stored in some data structure (called frontier or next) as well as marked as visited. 
+%	In the second step, the newly visited vertices become the new sources (called neighbours or current) from which the search continues by repeating this step. 
+%	Doing a traversal this way assures that all the nodes at the same distance to the source are explored before any vertices with greater distance can be explored. 
+%	All the vertices in the same distance to the source are called level.
+%	
+%	The desired output of a BFS can differ depending on where it is applied. With minimal modifications BFS could deliver a predecessor map, where every vertex points to only one parent, or a distance map, where the distance to the source is stored for every vertex. Since the predecessor map is not necessarily unique, we choose to return a distance map as our output to make verification of correctness simpler.  
+%	
+%	The sequential version of a BFS can be implemented using a single queue and has a theoretical asymptotic runtime of $\mathcal{O}(\lvert V\rvert + \lvert E\rvert )$, where $\lvert V\rvert$ is the number of vertices and $\lvert E\rvert$ the number of edges in the connected graph.
+%	
+%	
+%	\mypar{Graphs}
+%	As previously mentioned graphs are a widely used abstract data type, which depending on their source and use can have widely different properties which in turn account for strong variations in the performance of BFS and other graph algorithms.
+%	
+%	To account for this we used real world graphs and specific synthetic graphs provided by the University of Florida Sparse Matrix Collection \cite{SparseMatrixCollection}, notably some graphs from the DIMACS10 challenge, in our test and experimental cases.
+%	The mentioned synthetic graphs are mostly so called Kronecker graphs \cite{Leskovec:2010:KGA:1756006.1756039}, which are generative network graphs that obey the main static network patterns observed in real networks.
+%	Especially the small-world property is worth mentioning since it provides a reasonable assumption that a given node in a network has a large enough neighbourhood so that a parallel BFS can be useful.
+%	
+%	% TODO
+%	% hybrid: doing topdown or bottum up, depending on heuristic switch. uses 1x OMP critical section in topdown part and localneighbourhoods + prefix sum to add them together at each level in the bottom up part. Idea from paper by Yasui et al
+%	% nonlevel: using 1xCAS to check visited and  1xOMP critical for the distance update (needs to see if unvisited or visited from further away), frontier is a single queue. if a thread finishes with his part he waits for the others to finish (no loadbalancing). Idea from talking with Timo.
+%	% nonlevel with work stealing. Idea is for threads that are finished with their part to steal work from a randomly choosen other thread. Only works with too much synchronization (slow) at the moment. Idea from talking with Timo.
+%	
+%	\section{Your Proposed Method}\label{sec:yourmethod}
+%	
+%	%Now comes the ``beef'' of the report, where you explain what you
+%	%did. Again, organize it in paragraphs with titles. As in every section
+%	%you start with a very brief overview of the section.
+%	%
+%	%In this section, structure is very important so one can follow the technical content.
+%	%
+%	%Mention and cite any external resources that you used including libraries or other code.
+%	
+%	We implemented many different algorithms and multiple variants for most of them. They return a distance map from one source vertex to all reachable vertices in the graph.
+%	
+%	All our implementations are based on OpenMP for synchronization.
+%	
+%	
+%	\mypar{Topdown}
+%	A lot of our approaches are based on a simple topdown algorithm. 
+%	The idea is to do a level-synchronous traversal of the graph by keeping record of the vertices in the current as well as those in the next level (``frontier'' and ``neighbour'') in two data structures of the same type. 
+%	We then set the frontier to the current neighbours after each level. 
+%	This leads to an implicit barrier, as the work done by the different threads has to be synchronized. 
+%	We experimented with different data structures and synchronization methods.
+%	
+%	% naive
+%	% using 1x OMP critical section (check visited and add to frontier), frontier is a vector to allow easy dynamic splitting after each level (load balancing between threads). basically naive implementation
+%	The naive variant of the topdown algorithm has a global standard vector for the frontier to allow easy dynamic splitting between the threads in each level. 
+%	This balances the load between threads, however it has a significant overhead because it relies on a critical section (\verb+OMP critical+) for checking whether the vertices were already visited and inserting them into the neighbour data structure.
+%	
+%	% topdownCAS
+%	% using CAS (check visited) + OMP critical section (add to frontier), also vector frontier. Idea from paper by Berrendorf
+%	To improve the naive implementation, we first tried to get rid of the critical section, as this produced a lot of overhead. 
+%	We attempted this by using an atomic, the built-in \verb+__sync_val_compare_and_swap+ (CAS), to atomically check whether a vertex was visited and setting the correct distance. 
+%	In addition to the atomic, this variant uses a local neighbourhood data structure (standard vector) to be able to do without a critical section. 
+%	Only at the end of each level, a lock (\verb+omp_lock_t+) is needed to combine the local neighbourhoods to a global one, which can then be distributed between the threads for the next level. 
+%	This is an idea adapted from Berrendorf \cite{Berrendorf:14}.
+%	
+%	% topdown_ifCAS
+%	% same as topdownCAS but doing a nonatomic visited check before each CAS, Idea from paper by Berrendorf
+%	An extended version of the algorithm before does a non-atomic check if a vertex visited before each CAS. 
+%	This lets us treat the cases where the vertex had already been visited without any synchronization.
+%	
+%	% maybe better leave this method out, as it is fairly similar to the optimistic approach. The only difference lies in the data structures used.
+%	% topdown_nonatomic
+%	% doing the visited check nonatomic (adds additional work but no race condition), using localneighbourhood and OMP lock to add them to the global neighbourhood after a thread has looked at all neighbours from one node. Idea from paper by Berrendorf
+%%	Also inspired by Berrendorf \cite{Berrendorf:14} is the idea to remove atomics altogether. 
+%%	This results in a race condition where additional work for the next level is created, as some vertices might be added to the neighbours multiple times. 
+%%	However, expensive atomics are omitted, which results in a trade-off between the additional time from the added work and the faster runtime by leaving out the CAS. 
+%%	This algorithm still uses a local neighbourhood and a lock when combining them.
+%	
+%	% parallelbfs1
+%	% using 3x bool arrays for visited, looping over all nodes on each level, frontier is a mask
+%%	Instead of using a standard vector for the frontier and the neighbour, one of our implementation relies on a bool array for all data structures (visited vertices, frontier, neighbour). 
+%%	This makes it possible to remove all critical sections, as the insertion of an element into a vector was what made them necessary in the first place. Similarly to the algorithm before, there might be additional work due to avoiding atomics. 
+%%	The downside of this implementation is that in each level, you have to loop through all the vertices, not just the current frontier, to be able to explore from there. 
+%%	Depending on the structure of the graph, this can be much more work.
+%	
+%	% TODO
+%	% tbb_parallelqueue
+%	% doing a topdown method using 1x OMP single for level synchronization and TBB concurrentqueue as a concurrent frontier
+%	
+%	% even_odd_parallelqueue
+%	% using only implicit OMP barrier for level synchronization. switching between two TBB parallelqueue frontiers
 	
 	
 	
