@@ -253,7 +253,7 @@
 	\section{Background: Breadth-first search}\label{sec:background}
 	
 	
-	In this section, we will give a brief overview over the idea of breadth-first search and its sequential asymptotic runtime cost, as well as	 a short discussion of different graphs and graph properties. 
+	In this section, we will give a brief overview over the idea of breadth-first search and its sequential asymptotic runtime cost, as well as a short discussion of different graphs and graph properties. 
 	
 	
 	\mypar{Breadth-first search}
@@ -269,8 +269,11 @@
 	
 	
 	\mypar{Graphs}
+	As previously mentioned graphs are a widely used abstract data type, which depending on their source and use can have widely different properties which in turn account for strong variations in the performance of BFS and other graph algorithms.
 	
-	
+	To account for this we used real world graphs and specific synthetic graphs provided by the University of Florida Sparse Matrix Collection \cite{SparseMatrixCollection}, notably some graphs from the DIMACS10 challenge, in our test and experimental cases.
+	The mentioned synthetic graphs are mostly so called Kronecker graphs \cite{Leskovec:2010:KGA:1756006.1756039}, which are generative network graphs that obey the main static network patterns observed in real networks.
+	Especially the small-world property is worth mentioning since it provides a reasonable assumption that a given node in a network has a large enough neighbourhood so that a parallel BFS can be useful.
 	
 	% TODO
 	% hybrid: doing topdown or bottum up, depending on heuristic switch. uses 1x OMP critical section in topdown part and localneighbourhoods + prefix sum to add them together at each level in the bottom up part. Idea from paper by Yasui et al
