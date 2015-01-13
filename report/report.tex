@@ -5,84 +5,87 @@
 
 \documentclass[letterpaper]{article}
 
-\usepackage 		 {amsmath	} % AMS mathematical facilities for LaTeX
+\usepackage 		 {algorithm	} % A suite of tools for typesetting algorithms in pseudo-code
+\usepackage[noend	]{algpseudocode}
+\usepackage 		 {amsmath		} % AMS mathematical facilities for LaTeX
 \usepackage 		 {amssymb	} % Amsfonts + few hundred additional mathematical symbols
-\usepackage[english	]{babel	} 
-\usepackage 		 {graphicx 	} % Enhanced support for graphics
-\usepackage 		 {hyperref 	} % Extensive support for hypertext in LaTeX
-\usepackage 		 {spconf 	} % Style file for Signal Processing Society Conferences
-\usepackage 		 {algorithm	} % Code Snippet
-\usepackage[noend]{algpseudocode}
+\usepackage[english	]{babel	    	} % Multilingual support for LaTeX
+\usepackage 		 {etoolbox 		}
+\usepackage 		 {graphicx 		} % Enhanced support for graphics
+\usepackage 		 {hyperref 		} % Extensive support for hypertext in LaTeX
+\usepackage 		 {spconf 		} % Style file for Signal Processing Society Conferences
 
-\usepackage{epstopdf	} % Convert EPS to 'encapsulated' PDF using GhostScript
+\usepackage 		 {epstopdf		} % Convert EPS to 'encapsulated' PDF using GhostScript
 
 \graphicspath{{figures/}} % Relative path to figure sources
 
 \newcommand{\mypar}[1]{{\bf #1.}} % Bold paragraph titles
 
-\algrenewcommand\algorithmicrequire{\textbf{Input:}} % "Input" instead of "Require" in code snippet
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    Custom tools for code snippets preparation in nice pseudocode
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\algrenewcommand\algorithmicrequire{\textbf{Input:}} % "Input" instead of "Require" in code snippet
 
+	% begin vertical rule patch for algorithmicx (http://tex.stackexchange.com/questions/144840/vertical-loop-block-lines-in-algorithmicx-with-noend-option)
+	\makeatletter
+	% start with some helper code
+	% This is the vertical rule that is inserted
+	\newcommand*{\algrule}[1][\algorithmicindent]{\makebox[#1][l]{\hspace*{.5em}\thealgruleextra\vrule height \thealgruleheight depth \thealgruledepth}}
+	% its height and depth need to be adjustable
+	\newcommand*{\thealgruleextra}{}
+	\newcommand*{\thealgruleheight}{.75\baselineskip}
+	\newcommand*{\thealgruledepth}{.25\baselineskip}
 
+	\newcount\ALG@printindent@tempcnta
+	\def\ALG@printindent
+	{
+    		\ifnum \theALG@nested>0% is there anything to print
+        		\ifx\ALG@text\ALG@x@notext% is this an end group without any text?
+           			% do nothing
+        		\else
+            			\unskip
+            			\addvspace{-1pt}% FUDGE to make the rules line up
+           			% draw a rule for each indent level
+            			\ALG@printindent@tempcnta=1
+            			\loop
+               				\algrule[\csname ALG@ind@\the\ALG@printindent@tempcnta\endcsname]%
+                			\advance \ALG@printindent@tempcnta 1
+            			\ifnum \ALG@printindent@tempcnta<\numexpr\theALG@nested+1\relax% can't do <=, so add one to RHS and use < instead
+            			\repeat
+        		\fi
+    		\fi
+	}
 
-% begin vertical rule patch for algorithmicx (http://tex.stackexchange.com/questions/144840/vertical-loop-block-lines-in-algorithmicx-with-noend-option)
-\makeatletter
-% start with some helper code
-% This is the vertical rule that is inserted
-    \newcommand*{\algrule}[1][\algorithmicindent]{\makebox[#1][l]{\hspace*{.5em}\thealgruleextra\vrule height \thealgruleheight depth \thealgruledepth}}%
-% its height and depth need to be adjustable
-\newcommand*{\thealgruleextra}{}
-\newcommand*{\thealgruleheight}{.75\baselineskip}
-\newcommand*{\thealgruledepth}{.25\baselineskip}
+	% the following line injects our new indent handling code in place of the default spacing
+	\patchcmd{\ALG@doentity}{\noindent\hskip\ALG@tlm}{\ALG@printindent}{}{\errmessage{failed to patch}}
+	\makeatother
 
-\newcount\ALG@printindent@tempcnta
-\def\ALG@printindent{%
-    \ifnum \theALG@nested>0% is there anything to print
-        \ifx\ALG@text\ALG@x@notext% is this an end group without any text?
-            % do nothing
-        \else
-            \unskip
-            \addvspace{-1pt}% FUDGE to make the rules line up
-            % draw a rule for each indent level
-            \ALG@printindent@tempcnta=1
-            \loop
-                \algrule[\csname ALG@ind@\the\ALG@printindent@tempcnta\endcsname]%
-                \advance \ALG@printindent@tempcnta 1
-            \ifnum \ALG@printindent@tempcnta<\numexpr\theALG@nested+1\relax% can't do <=, so add one to RHS and use < instead
-            \repeat
-        \fi
-    \fi
-    }%
-\usepackage{etoolbox}
-% the following line injects our new indent handling code in place of the default spacing
-\patchcmd{\ALG@doentity}{\noindent\hskip\ALG@tlm}{\ALG@printindent}{}{\errmessage{failed to patch}}
-\makeatother
-
-% the required height and depth are set by measuring the content to be shown
-% this means that the content is processed twice
-\newbox\statebox
-\newcommand{\myState}[1]{%
-    \setbox\statebox=\vbox{#1}%
-    \edef\thealgruleheight{\dimexpr \the\ht\statebox+1pt\relax}%
-    \edef\thealgruledepth{\dimexpr \the\dp\statebox+1pt\relax}%
-    \ifdim\thealgruleheight<.75\baselineskip
-        \def\thealgruleheight{\dimexpr .75\baselineskip+1pt\relax}%
-    \fi
-    \ifdim\thealgruledepth<.25\baselineskip
-        \def\thealgruledepth{\dimexpr .25\baselineskip+1pt\relax}%
-    \fi
-    %\showboxdepth=100
-    %\showboxbreadth=100
-    %\showbox\statebox
-    \State #1%
-    %\State \usebox\statebox
-    %\State \unvbox\statebox
-    %reset in case the next command is not wrapped in \myState
-    \def\thealgruleheight{\dimexpr .75\baselineskip+1pt\relax}%
-    \def\thealgruledepth{\dimexpr .25\baselineskip+1pt\relax}%
-}
-% end vertical rule patch for algorithmicx
-
-
+	% the required height and depth are set by measuring the content to be shown
+	% this means that the content is processed twice
+	\newbox\statebox
+	\newcommand{\myState}[1]
+	{
+    		\setbox\statebox=\vbox{#1}%
+    		\edef\thealgruleheight{\dimexpr \the\ht\statebox+1pt\relax}%
+    		\edef\thealgruledepth{\dimexpr \the\dp\statebox+1pt\relax}%
+    		\ifdim\thealgruleheight<.75\baselineskip
+        		\def\thealgruleheight{\dimexpr .75\baselineskip+1pt\relax}%
+    		\fi
+    		\ifdim\thealgruledepth<.25\baselineskip
+        		\def\thealgruledepth{\dimexpr .25\baselineskip+1pt\relax}%
+    		\fi
+		%\showboxdepth=100
+		%\showboxbreadth=100
+		%\showbox\statebox
+		\State #1%
+		%\State \usebox\statebox
+		%\State \unvbox\statebox
+		%reset in case the next command is not wrapped in \myState
+		\def\thealgruleheight{\dimexpr .75\baselineskip+1pt\relax}%
+		\def\thealgruledepth{\dimexpr .25\baselineskip+1pt\relax}%
+	}
+	% end vertical rule patch for algorithmicx
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 \title{Parallel Implementation of Breadth-First Search} % TODO: We need good descriptive title. This one is work version.
@@ -187,8 +190,7 @@
 		The only synchronization point left in our proposed algorithm is an implicit barrier between the processing of different levels of the graph.
 		
 		In addition to this, we have compared a number of different approaches based on different synchronization primitives and techniques and load balancing strategies.
-	
-	
+
 	
 	
 	\section{Design and implementation}\label{sec:deim} % Roughtly page + half a column. + 1 code snippet
@@ -211,7 +213,7 @@
 			
 			\textbf{Avoidance of synchronization.}
 			Synchronization is an expensive but necessary component of almost all parallel algorithms.
-			It is expensive in both dimensions, as synchronization usually takes many CPU cycles (in absolute numbers), which reduces scalability. % What is meant with this sentence? Do you mean that it takes a lot of CPU cycles, and because of this reduces scalability?
+			It is expensive in both dimensions, as synchronization usually takes many CPU cycles (in absolute numbers), which reduces scalability. 	% TODO: What is meant with this sentence? Do you mean that it takes a lot of CPU cycles, and because of this reduces scalability?
 			Our main design direction was figuring out of the cheapest scheme of synchronization while still providing consistency.
 			Ideally, we would like to eliminate synchronization at all.
 			
@@ -282,7 +284,7 @@
 				
 			
 		\subsection{Optimistic BFS algorithm design}
-			Our proposed algorithm was designed for the environment of OpenMP and due to this a employs data-parallelism approach. 
+			Our proposed algorithm was designed for the environment of OpenMP and due to this employs data-parallelism approach. 
 			It accepts two input parameters: the graph description and the index of the root node.
 			The graph description is a list of lists, in which each top-level list denotes one of the graph vertices and the bottom level list enumerates all neighbours of the appropriate vertex, thus denoting all edges connected to it.
 			The algorithm returns a distance map for the specified root node.
@@ -290,12 +292,35 @@
 			The core of the proposed algorithm is classical. 
 			It is a level by level sequential top-down walking through the graph, where in each iteration we discover all unvisited neighbours of the vertices in the current level.
 			
-			The algorithm utilizes $4 \cdot number\_of\_vertices$ bytes of memory allocated in 4 equal chunks:
+			One of the core design decision related to memory management.
+			Classical approach employs dynamic data structures like lists and queues which are used for level member nodes.
+			This approach is purely suitable for efficient parallelism, because it explicitly introduce synchronization point and can introduce implicit synchronization point via memory chunks allocation/deallocation. 
+			Instead we propose to use raw memory chunks allocated and freed only once in the prologue and epilogue of the algorithm.
+			Our approach utilize $4 \cdot number\_of\_the\_node$ bytes of memory allocated in 4 equal chunks:
 			\begin{enumerate}
-				\item x
+				\item Flags array tracking visited nodes.
+				\item Flags array holding all nodes of the current level.
+				\item Flags array used for tracking of the next level nodes.
+				\item Flags array used for resetting.
 			\end{enumerate}
 			
+			After the end of each level processing the last three flag arrays exchange they roles by simple and efficient pointers swapping in accordance with the next rotation scheme: current level $\to$ resetting $\to$ next level $\to$ current level.
+			As a result each level processing started with set of current level nodes collected during previous level processing and clear map of next level nodes. 
 
+			Byte per node memory allocation scheme was chosen instead of classical bit masks because it allows to simplify memory access patterns and eliminate synchronization which would be required otherwise.
+			Bit mask update via OR operation includes two elementary memory access operations, because this operation is an example of read-modify-write operation.
+			As a result it introduces source of inconsistency in the concurrent environment.
+			This consistency can be easily fixed by using of the lock prefix (atomic operations on Linux and interlocked operations on Windows), but this will mean one more point of synchronization which we are trying to eliminate.
+			
+			Level processing performs in parallel using for cycle of the OpenMP.
+			This cycle introduce the only synchronization point of the proposed algorithm via implicit barrier at the end of cycle.
+			
+			Each iteration of the parallel for cycle containst two conditional actions: making a step on the graph walking and clearing of the clearing flags array.
+			Last one action is made only by threads processing the node at the start of the cache line and clear whole cache line at once.
+			This policy reduces the level of false cache sharing. 
+			Stepping through the graph performs only for nodes specified by the flags array of the current level of the walking.
+			For such nodes algorithm algorithm updates the distance map, flags array of visited nodes and flags array for the next level of all unvisited neighbor nodes .
+						
 			\begin{algorithm}
 				\caption{Optimistic BFS}
 				\label{alg:optbfs}
