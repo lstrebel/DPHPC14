@@ -237,7 +237,6 @@
 		
 		All our implementations are based on OpenMP for synchronization.
 		
-		
 		\mypar{Top-down}
 		Most of our approaches are based on a simple top-down algorithm. 
 		The idea is to do a level-synchronous traversal of the graph by keeping record of the vertices in the current as well as those in the next level (``frontier'' and ``neighbour'') in two data structures of the same type. 
@@ -273,13 +272,18 @@
 	%	This algorithm still uses a local neighbourhood and a lock when combining them.
 		
 		
-		% TODO
 		% tbb_parallelqueue
 		% doing a top-down method using 1x OMP single for level synchronization and TBB concurrentqueue as a concurrent frontier
-		
+
 		% even_odd_parallelqueue
 		% using only implicit OMP barrier for level synchronization. switching between two TBB parallelqueue frontiers			
-				
+		To compare all synchronisation approaches we also looked into concurrent data structures to solve the synchronisation problem of the algorithm i.e. a concurrent queue to handle the neighbour and frontier queue.
+		The design and implementation of such a data structure is a subject of its own and beyond the scope of this paper. Therefore instead of focusing on designing or implementing such a concurrent queue we used the one implemented in the Intel Threading Building Blocks library (Intel TBB version 4.3).
+		We found that using two concurrent queues for the neighbour and frontier and swapping them between levels in the same way as in the above mentioned implementations diminishes the time saved by not using explicit synchronisation significantly.
+		To perform better we implemented a version that uses two concurrent queues that instead of swapping just switch roles from frontier to neighbour and vice versa after each level.
+		This way the swapping in the serial part of the implementation is replaced by a few if-statements while essentially doing the same algorithm.
+		 
+		
 			
 		\subsection{Optimistic BFS algorithm design}
 			Our proposed algorithm was designed for the environment of OpenMP and due to this a employs data-parallelism approach. 
