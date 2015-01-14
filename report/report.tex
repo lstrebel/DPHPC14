@@ -332,7 +332,7 @@
 	
 	\section{Experiments}\label{sec:expe} % Roughtly two pages - half a column. + 4 plots
 		We present experimental results to demonstrate the performance gains that can be realized with Optimistic BFS.
-		There are three experimental testbeds was used during experiments. 
+		There are three experimental testbeds used in the experiments. 
 		In all cases scalability was measurements was limited by the number of physical processing elements present in the test environment (including processing elements delivered by Hyper-Threading technology).
 		Testbeds used includes:
 		\begin{itemize}
@@ -359,7 +359,7 @@
 		
 		\subsection{Different approaches}\label{sec:approaches}
 		
-		We implemented many different algorithms and multiple variants for most of them. All of them return a distance map from one source vertex to all reachable vertices in the graph.
+		We implemented many different algorithms and multiple variants for most of them. 			All of them return a distance map from one source vertex to all reachable vertices in the graph.
 		All our implementations are based on OpenMP for synchronization.
 		Most of our approaches are based on a simple top-down algorithm. 
 		%The idea is to do a level-synchronous traversal of the graph by keeping record of the vertices in the current as well as those in the next level (``frontier'' and ``neighbour'') in two data structures of the same type. 
@@ -393,14 +393,15 @@
 		% maybe better leave this method out, as it is fairly similar to the optimistic approach. The only difference lies in the data structures used.
 		%
 		% topdown_nonatomic
-		% doing the visited check nonatomic (adds additional work but no race condition), using localneighbourhood and OMP lock to add them to the global neighbourhood after a thread has looked at all neighbours from one node. Idea from paper by Berrendorf
+		Doing the visited check from the previous versions in a non atomic way adds additional work but no harmful race condition.
+		This implementation uses a local neighbourhood and (\verb+omp_lock_t+) to add them together, which means it still has to use synchronisation in constrast to the optimistic approach.
 	%	Also inspired by Berrendorf \cite{Berrendorf:14} is the idea to remove atomics altogether. 
 	%	This results in a race condition where additional work for the next level is created, as some vertices might be added to the neighbours multiple times. 
 	%	However, expensive atomics are omitted, which results in a trade-off between the additional time from the added work and the faster runtime by leaving out the CAS. 
 	%	This algorithm still uses a local neighbourhood and a lock when combining them.
 
 		\mypar{Non-level synchronous}
-		
+		Very different approach to the BFS problem. Ignoring the implicit level barrier allows threads to manage their own queues without synchronisation but adds the need to check if any visited node was visited from a different thread in a later level.
 		% tbb_parallelqueue
 		% doing a top-down method using 1x OMP single for level synchronization and TBB concurrentqueue as a concurrent frontier
 
@@ -408,11 +409,12 @@
 		% using only implicit OMP barrier for level synchronization. switching between two TBB parallelqueue frontiers
 
 		\mypar{TBB Concurrent Queue}
-		To compare all synchronisation approaches we also looked into concurrent data structures to solve the synchronisation problem of the algorithm i.e. a concurrent queue to handle the neighbour and frontier queue.
-		The design and implementation of such a data structure is a subject of its own and beyond the scope of this paper. Therefore instead of focusing on designing or implementing such a concurrent queue we used the one implemented in the Intel Threading Building Blocks library (Intel TBB version 4.3).
-		We found that using two concurrent queues for the neighbour and frontier and swapping them between levels in the same way as in the above mentioned implementations diminishes the time saved by not using explicit synchronisation significantly.
-		To perform better we implemented a version that uses two concurrent queues that instead of swapping just switch roles from frontier to neighbour and vice versa after each level.
-		This way the swapping in the serial part of the implementation is replaced by a few if-statements while essentially doing the same algorithm.
+		To compare all synchronisation approaches we also looked into concurrent data structures to solve the synchronisation problem of the algorithm.
+		The design and implementation of such a data structure is a subject of its own and beyond the scope of this paper. Therefore instead of focusing on designing or implementing such a concurrent queue ourselves we used the one implemented in the Intel Threading Building Blocks library (Intel TBB version 4.3).
+		%We found that using two concurrent queues for the neighbour and frontier and swapping them between levels in the same way as in the above mentioned implementations diminishes the time saved by not using explicit synchronisation significantly.
+		%To perform better we implemented a version that uses two concurrent queues that instead of swapping just switch roles from frontier to neighbour and vice versa after each level.
+		%This way the swapping in the serial part of the implementation is replaced by a few if-statements while essentially doing the same algorithm.
+		Our implementation uses two concurrent queues that switch roles from frontier to neighbour and vice versa after each level to avoid having a costly swap operation in the sequential part between levels.
 
 		\mypar{Optimistic}
 		The optimistic version refers to our best implementation described in detail in section \ref{sec:deim} "Design and implementation".
