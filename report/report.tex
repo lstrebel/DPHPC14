@@ -211,76 +211,6 @@
 			Our main design direction was figuring out of the cheapest scheme of synchronization while still providing consistency.
 			Ideally, we would like to eliminate synchronization at all.
 			
-			
-
-	
-		% TODO
-		% hybrid: doing top-down or bottum up, depending on heuristic switch. uses 1x OMP critical section in top-down part and localneighbourhoods + prefix sum to add them together at each level in the bottom-up part. Idea from paper by Yasui et al
-		% nonlevel: using 1xCAS to check visited and  1xOMP critical for the distance update (needs to see if unvisited or visited from further away), frontier is a single queue. if a thread finishes with his part he waits for the others to finish (no loadbalancing). Idea from talking with Timo.
-		% nonlevel with work stealing. Idea is for threads that are finished with their part to steal work from a randomly choosen other thread. Only works with too much synchronization (slow) at the moment. Idea from talking with Timo.
-		
-		\subsection{Different approaches}\label{sec:approaches}
-		
-		%Now comes the ``beef'' of the report, where you explain what you
-		%did. Again, organize it in paragraphs with titles. As in every section
-		%you start with a very brief overview of the section.
-		%
-		%In this section, structure is very important so one can follow the technical content.
-		%
-		%Mention and cite any external resources that you used including libraries or other code.
-		
-		We implemented many different algorithms and multiple variants for most of them. They return a distance map from one source vertex to all reachable vertices in the graph.
-		
-		All our implementations are based on OpenMP for synchronization.
-		
-		\mypar{Top-down}
-		Most of our approaches are based on a simple top-down algorithm. 
-		The idea is to do a level-synchronous traversal of the graph by keeping record of the vertices in the current as well as those in the next level (``frontier'' and ``neighbour'') in two data structures of the same type. 
-		We then set the frontier to the current neighbours after each level. 
-		This leads to an implicit barrier, as the threads that finish earlier have to wait on the others before proceeding to the next level.
-		We experimented with different data structures and synchronization methods.
-		
-		% naive
-		% using 1x OMP critical section (check visited and add to frontier), frontier is a vector to allow easy dynamic splitting after each level (load balancing between threads). basically naive implementation
-		The naive variant of the top-down algorithm uses a global standard vector for the frontier to allow easy dynamic splitting between the threads in each level. 
-		This balances the load between threads, however it has a significant overhead because it relies on a critical section (\verb+OMP critical+) for checking whether the vertices were already visited and subsequently inserting them into the neighbour data structure.
-		
-		% topdownCAS
-		% using CAS (check visited) + OMP critical section (add to frontier), also vector frontier. Idea from paper by Berrendorf
-		To improve the naive implementation, the first approach to get rid of the critical section as it produced a lot of overhead. 
-		We attempted this by using an atomic, the built-in \verb+__sync_val_compare_and_swap+ (CAS), to atomically check whether a vertex was visited and setting the correct distance. 
-		In addition to the atomic, this variant uses a local neighbourhood data structure (standard vector) to be able to do without a critical section. 
-		Only at the end of each level a lock (\verb+omp_lock_t+) is needed to combine the local neighbourhoods to a global one, which can then be distributed between the threads for the next level. 
-		This is an idea adapted from Berrendorf \cite{Berrendorf:14}.
-		
-		% topdown_ifCAS
-		% same as topdownCAS but doing a nonatomic visited check before each CAS, Idea from paper by Berrendorf
-		An extended version of the algorithm before does a non-atomic check if a vertex visited before each CAS. 
-		This lets us treat the cases where the vertex had already been visited without any synchronization.
-		
-		% maybe better leave this method out, as it is fairly similar to the optimistic approach. The only difference lies in the data structures used.
-		%
-		% topdown_nonatomic
-		% doing the visited check nonatomic (adds additional work but no race condition), using localneighbourhood and OMP lock to add them to the global neighbourhood after a thread has looked at all neighbours from one node. Idea from paper by Berrendorf
-	%	Also inspired by Berrendorf \cite{Berrendorf:14} is the idea to remove atomics altogether. 
-	%	This results in a race condition where additional work for the next level is created, as some vertices might be added to the neighbours multiple times. 
-	%	However, expensive atomics are omitted, which results in a trade-off between the additional time from the added work and the faster runtime by leaving out the CAS. 
-	%	This algorithm still uses a local neighbourhood and a lock when combining them.
-		
-		
-		% tbb_parallelqueue
-		% doing a top-down method using 1x OMP single for level synchronization and TBB concurrentqueue as a concurrent frontier
-
-		% even_odd_parallelqueue
-		% using only implicit OMP barrier for level synchronization. switching between two TBB parallelqueue frontiers			
-		To compare all synchronisation approaches we also looked into concurrent data structures to solve the synchronisation problem of the algorithm i.e. a concurrent queue to handle the neighbour and frontier queue.
-		The design and implementation of such a data structure is a subject of its own and beyond the scope of this paper. Therefore instead of focusing on designing or implementing such a concurrent queue we used the one implemented in the Intel Threading Building Blocks library (Intel TBB version 4.3).
-		We found that using two concurrent queues for the neighbour and frontier and swapping them between levels in the same way as in the above mentioned implementations diminishes the time saved by not using explicit synchronisation significantly.
-		To perform better we implemented a version that uses two concurrent queues that instead of swapping just switch roles from frontier to neighbour and vice versa after each level.
-		This way the swapping in the serial part of the implementation is replaced by a few if-statements while essentially doing the same algorithm.
-		 
-		
-			
 		\subsection{Optimistic BFS algorithm design}
 			Our proposed algorithm was designed for the environment of OpenMP and due to this employs data-parallelism approach. 
 			It accepts two input parameters: the graph description and the index of the root node.
@@ -408,25 +338,127 @@
 		\begin{itemize}
 			\item \textbf{Euler}. Intel Xeon E5-2697v2 processor (2.7 GHz nominal, 3.0-3.5 GHz peak, HT enabled) with 12 physical and 24 logical cores. GNU GCC compiler with -O2 flag. 
 			%TODO: How much memory, what version of Linux kernel and GCC compiler was used -}
-			\item \textbf{Einstein}. Intel Xeon Phi accelerator with 61 cores. Intel ICC compiler, with -O2 flag.
+			\item \textbf{Einstein}. Intel Xeon Phi accelerator (1.238 GHz base frequency, 1.333 GHz max turbo frequency, HT enabled) with 61 physical cores. 16 Gb of memory. Intel ICC compiler, with -O2 flag.
 			%TODO: What version of accelerator, Linux kernel and ICC compiler was used -}
 			\item \textbf{AMD}. AMD FX-8350 (4GHz nominal, 4.2GHz peak) with 8 physical cores. 8 Gb of memory. Microsoft Windows Server 2003 with PAE enabled. Microsoft Visual Studio 2008 Professional with  Microsoft C++ compiler 9.00.30729.01 with full optimization enabled.
 		\end{itemize}
+		The experiments include two different graphs:
+		\begin{itemize}
+			\item \textbf{Million}. A huge real world graph includes 1 million nodes and $\sim$3 million edges.
+			\item \textbf{DIMACSKRON}. A Kronecker graph used in the DIMACS10 Challenge. Consists of $\sim$500k nodes and $\sim$21 million edges.
+		\end{itemize}
 		
-		%TODO: Description of experiment 
+		%TODO: Description of experiment
+
+
 		%TODO: Description of alternative methods used.
+% TODO
+		% hybrid: doing top-down or bottum up, depending on heuristic switch. uses 1x OMP critical section in top-down part and localneighbourhoods + prefix sum to add them together at each level in the bottom-up part. Idea from paper by Yasui et al
+		% nonlevel: using 1xCAS to check visited and  1xOMP critical for the distance update (needs to see if unvisited or visited from further away), frontier is a single queue. if a thread finishes with his part he waits for the others to finish (no loadbalancing). Idea from talking with Timo.
+		% nonlevel with work stealing. Idea is for threads that are finished with their part to steal work from a randomly choosen other thread. Only works with too much synchronization (slow) at the moment. Idea from talking with Timo.
 		
+		\subsection{Different approaches}\label{sec:approaches}
+		
+		We implemented many different algorithms and multiple variants for most of them. All of them return a distance map from one source vertex to all reachable vertices in the graph.
+		All our implementations are based on OpenMP for synchronization.
+		Most of our approaches are based on a simple top-down algorithm. 
+		%The idea is to do a level-synchronous traversal of the graph by keeping record of the vertices in the current as well as those in the next level (``frontier'' and ``neighbour'') in two data structures of the same type. 
+		%We then set the frontier to the current neighbours after each level. 
+		%This leads to an implicit barrier, as the threads that finish earlier have to wait on the others before proceeding to the next level.
+		%We experimented with different data structures and synchronization methods.
+
+		\mypar{Top-down naive}
+		% naive
+		% using 1x OMP critical section (check visited and add to frontier), frontier is a vector to allow easy dynamic splitting after each level (load balancing between threads). basically naive implementation
+		The naive variant of the top-down algorithm uses a global standard vector for the frontier to allow easy dynamic splitting between the threads in each level. 
+		This balances the load between threads, however it has a significant overhead because it relies on a critical section (\verb+OMP critical+) for checking whether the vertices were already visited and subsequently inserting them into the neighbour data structure.
+
+		\mypar{Top-down CAS}
+		% topdownCAS
+		% using CAS (check visited) + OMP critical section (add to frontier), also vector frontier. Idea from paper by Berrendorf
+		To improve the naive implementation, the first approach to get rid of the critical section as it produced a lot of overhead. 
+		We attempted this by using an atomic, the built-in \verb+__sync_val_compare_and_swap+ (CAS), to atomically check whether a vertex was visited and setting the correct distance. 
+		In addition to the atomic, this variant uses a local neighbourhood data structure (standard vector) to be able to do without a critical section. 
+		Only at the end of each level a lock (\verb+omp_lock_t+) is needed to combine the local neighbourhoods to a global one, which can then be distributed between the threads for the next level. 
+		This is an idea adapted from Berrendorf \cite{Berrendorf:14}.
+		
+		% topdown_ifCAS
+		% same as topdownCAS but doing a nonatomic visited check before each CAS, Idea from paper by Berrendorf
+		\mypar{Top-down if-CAS}
+		An extended version of the algorithm before does a non-atomic check if a vertex visited before each CAS. 
+		This lets us treat the cases where the vertex had already been visited without any synchronization.
+
+		\mypar{Top-down non-atomic}
+
+		% maybe better leave this method out, as it is fairly similar to the optimistic approach. The only difference lies in the data structures used.
+		%
+		% topdown_nonatomic
+		% doing the visited check nonatomic (adds additional work but no race condition), using localneighbourhood and OMP lock to add them to the global neighbourhood after a thread has looked at all neighbours from one node. Idea from paper by Berrendorf
+	%	Also inspired by Berrendorf \cite{Berrendorf:14} is the idea to remove atomics altogether. 
+	%	This results in a race condition where additional work for the next level is created, as some vertices might be added to the neighbours multiple times. 
+	%	However, expensive atomics are omitted, which results in a trade-off between the additional time from the added work and the faster runtime by leaving out the CAS. 
+	%	This algorithm still uses a local neighbourhood and a lock when combining them.
+
+		\mypar{Non-level synchronous}
+		
+		% tbb_parallelqueue
+		% doing a top-down method using 1x OMP single for level synchronization and TBB concurrentqueue as a concurrent frontier
+
+		% even_odd_parallelqueue
+		% using only implicit OMP barrier for level synchronization. switching between two TBB parallelqueue frontiers
+
+		\mypar{TBB Concurrent Queue}
+		To compare all synchronisation approaches we also looked into concurrent data structures to solve the synchronisation problem of the algorithm i.e. a concurrent queue to handle the neighbour and frontier queue.
+		The design and implementation of such a data structure is a subject of its own and beyond the scope of this paper. Therefore instead of focusing on designing or implementing such a concurrent queue we used the one implemented in the Intel Threading Building Blocks library (Intel TBB version 4.3).
+		We found that using two concurrent queues for the neighbour and frontier and swapping them between levels in the same way as in the above mentioned implementations diminishes the time saved by not using explicit synchronisation significantly.
+		To perform better we implemented a version that uses two concurrent queues that instead of swapping just switch roles from frontier to neighbour and vice versa after each level.
+		This way the swapping in the serial part of the implementation is replaced by a few if-statements while essentially doing the same algorithm.
+
+		\mypar{Optimistic}
+		The optimistic version refers to our best implementation described in detail in section \ref{sec:deim} "Design and implementation".
+		Optimistic modified refers to a different way of initializing and managing the flag arrays.
+
+
 		\begin{figure}\centering
-	  		\includegraphics[scale=0.33]{dft-performance.eps}
-	  		\caption{Performance of four single precision implementations of the
-	  		discrete Fourier transform. The operations count is roughly the
-	  		same. The labels in this plot are maybe a little bit too small.\label{fftperf}}
+	  		\includegraphics[scale=0.33]{amd_biggraph.eps}
+	  		\caption{Performance of our BFS implementations on the AMD test environment operating on the Million graph.\label{fig:amdbig}}
 		\end{figure}
-	
+		\begin{figure}\centering
+	  		\includegraphics[scale=0.33]{amd_dimacskron.eps}
+	  		\caption{Performance of our BFS implementations on AMD operating on the DIMACSKRON graph.\label{fig:amdkron}}
+		\end{figure}
+
+		\begin{figure}\centering
+	  		\includegraphics[scale=0.33]{euler_biggraph.eps}
+	  		\caption{Performance of our BFS implementations on Euler operating on the Million graph.\label{fig:eulerbig}}
+		\end{figure}
+		\begin{figure}\centering
+	  		\includegraphics[scale=0.33]{euler_dimacskron.eps}
+	  		\caption{Performance of our BFS implementations on Euler operating on the DIMACSKRON graph.\label{fig:eulerkron}}
+		\end{figure}
+
+		\begin{figure}\centering
+	  		\includegraphics[scale=0.33]{einstein_biggraph.eps}
+	  		\caption{Performance of our BFS implementations on Einstein operating on the Million graph.\label{fig:einsteinbig}}
+		\end{figure}
+		\begin{figure}\centering
+	  		\includegraphics[scale=0.33]{einstein_dimacskron.eps}
+	  		\caption{Performance of our BFS implementations on Einstein operating on the DIMACSKRON graph.\label{fig:einsteinkron}}
+		\end{figure}
+
+	\subsection{Experimental results}
+		\ref{fig:amdbig}
+		\ref{fig:amdkron}
+		\ref{fig:eulerbig}
+		\ref{fig:eulerkron}
+		\ref{fig:einsteinbig}
+		\ref{fig:einsteinkron}
+
+
 	\section{Discussion}\label{sec:disc} % Roughtly column. + ~1-2 references + 1 table
 		We now provide a analysis of the results of experimental evaluation of Optimistic BFS and other variants of parallel BFS used during our study to achieve additional insight on the base of the conducted study.
-		We would like to note that the study can't be considered as a complete, and additional experiments and analysis need to be conducted to achieve clear understanding of the all properties of the proposed algorithm.  
-		Particularly, weak scaling experiments need to be conducted and dependencies of BFS performance on the target environment properties and target  graph properties should be evaluated. 
+		We would like to note that the study can't be considered as complete, and additional experiments and analysis need to be conducted to achieve clear understanding of the all properties of the proposed algorithm.  
+		Particularly, weak scaling experiments need to be conducted and dependencies of BFS performance on the target environment properties and target graph properties should be evaluated. 
 		
 		Using the results of our experiments, we determined that the performance of the particular BFS implementation heavily depends on two major groups  of factors.
 		One of the very general conclusion from the our study is that performance characteristics of the memory intensive parallel algorithms depends heavily on the characteristics of the target environment.   
