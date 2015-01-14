@@ -134,14 +134,8 @@
 		Instead it must be considered as a source of a more general approach to the implementation of BFS for the environment of a particular kind of SMA system.
 		To achieve the most optimal approach for a particular computer system, investigation of different variants of parallel BFS and the most suitable optimizations must be done for the environment of the system of interest, because our results tell us that the efficiency of BFS itself and optimizations used in it heavily depend on the target environment. 
 	
-	% \section{Experiments}\label{sec:expe} % Roughtly two pages - half a column. + 4 plots
-	% \section{Discussion}\label{sec:disc} % Roughtly column. + ~1-2 references + 1 table
-	% \section{Summary and Conclusion}\label{sec:suco} % Roughtly half a column.
-
-
-	\section{Background: Breadth-first search}\label{sec:background}
-	
-	
+	\section{Background: Breadth-first search}\label{sec:background} %TODO: Remove this section. Get most important info from here and merge in other sections.
+		
 	In this section, we will give a brief overview over the idea of breadth-first search and its sequential asymptotic runtime cost, as well as a short discussion of different graphs and graph properties. 
 	
 	
@@ -406,122 +400,63 @@
 
 	
 	
-	\section{Experimental Results}\label{sec:exp}
+	\section{Experiments}\label{sec:expe} % Roughtly two pages - half a column. + 4 plots
+		We present experimental results to demonstrate the performance gains that can be realized with Optimistic BFS.
+		There are three experimental testbeds was used during experiments. 
+		In all cases scalability was measurements was limited by the number of physical processing elements present in the test environment (including processing elements delivered by Hyper-Threading technology).
+		Testbeds used includes:
+		\begin{itemize}
+			\item \textbf{Euler}. Intel Xeon E5-2697v2 processor (2.7 GHz nominal, 3.0-3.5 GHz peak, HT enabled) with 12 physical and 24 logical cores. GNU GCC compiler with -O2 flag. 
+			%TODO: How much memory, what version of Linux kernel and GCC compiler was used -}
+			\item \textbf{Einstein}. Intel Xeon Phi accelerator with 61 cores. Intel ICC compiler, with -O2 flag.
+			%TODO: What version of accelerator, Linux kernel and ICC compiler was used -}
+			\item \textbf{AMD}. AMD FX-8350 (4GHz nominal, 4.2GHz peak) with 8 physical cores. 8 Gb of memory. Microsoft Windows Server 2003 with PAE enabled. Microsoft Visual Studio 2008 Professional with  Microsoft C++ compiler 9.00.30729.01 with full optimization enabled.
+		\end{itemize}
+		
+		%TODO: Description of experiment 
+		%TODO: Description of alternative methods used.
+		
+		\begin{figure}\centering
+	  		\includegraphics[scale=0.33]{dft-performance.eps}
+	  		\caption{Performance of four single precision implementations of the
+	  		discrete Fourier transform. The operations count is roughly the
+	  		same. The labels in this plot are maybe a little bit too small.\label{fftperf}}
+		\end{figure}
 	
-%	Here you evaluate your work using experiments. You start again with a
-%	very short summary of the section. The typical structure follows.
+	\section{Discussion}\label{sec:disc} % Roughtly column. + ~1-2 references + 1 table
+		We now provide a analysis of the results of experimental evaluation of Optimistic BFS and other variants of parallel BFS used during our study to achieve additional insight on the base of the conducted study.
+		We would like to note that the study can't be considered as a complete, and additional experiments and analysis need to be conducted to achieve clear understanding of the all properties of the proposed algorithm.  
+		Particularly, weak scaling experiments need to be conducted and dependencies of BFS performance on the target environment properties and target  graph properties should be evaluated. 
+		
+		Using the results of our experiments, we determined that the performance of the particular BFS implementation heavily depends on two major groups  of factors.
+		One of the very general conclusion from the our study is that performance characteristics of the memory intensive parallel algorithms depends heavily on the characteristics of the target environment.   
+		By the target environment we mean underlying hardware architecture, operating system and compiler.
+		To understand what component of the environment plays major role in the affection on the algorithm performance characteristics additional experiments need to be conducted.
+		But what we can see is that even on so similar hardware platforms like based on AMD and Intel implementations of IA-32 architecture algorithm can demonstrate significantly different behaviour, what is surprising.
+		What we can expect is that parallel BFS algorithm optimal for the all SMA architectures can not exist at all and to achieve the best results on a particular environment algorithm must be developed and evaluated specially for this particular environment.
+		Simple code reuse may not work if performance is really have matter.
+		
+		This analysis also highlighted the dependency of the performance characteristics of the parallel variants of BFS on the characteristics of the target graph.
+		It is not clear what exact characteristics of the target graph and how exactly affects the performance of Optimistic BFS. 
+		But detailed understanding of these dependencies and knowledges of the characteristics of typical graphs used in particular application can help in development of the most performant algorithm for this particular application.
+		
+		In general, we can conclude that the most promising ways of the parallel BFS optimisation is optimisation of synchronization used and improvement of load balancing. 
+		The best way of synchronization optimisation is its avoidance, because even cheapest synchronization methods like atomic instruction can be too expensive on practice.
+		
+	\section{Summary and Conclusion}\label{sec:suco} % Roughtly half a column.
+		In this paper we present the design, implementation, and evaluation of Optimistic BFS, an parallel version of breadth-first search for shared memory architectures.
+		
+		We demonstrate through experiments that this algorithm and approach on synchronization avoidance in many cases outperforms not only approaches relying on cheap synchronization methods, but also approaches focused on improvement of load balancing. 		
+		In fact, we observe that the even cheap synchronization methods can be very expensive for performance and scalability of algorithm.  
+		Almost complete avoidance of synchronization results in a significant improvement of performance and determinism of BFS. 
+		
+		In our experimental evaluation, we found that the level of optimality of BFS algorithms  heavily depends on characteristics of target environment, consisting of CPU architecture, operating system and compiler used, and on characteristics of the target graph. 
+		In other words for different target environment and graphs different variants of parallel BFS can be optimal. 
+		
+		In future work, it would be interest to figure out what component of the Euler test environment is a main source of performance degradation of Optimistic BFS and thus find for which set of target environments it would be most optimal.  		
+		It also would be interesting to figure out the relationships of the performance provided by optimistic BFS depending of different graph characteristics and thus figure out for what class of graphs it would be most optimal.
+		Furthermore, it will be beneficial to evaluate weak scaling properties of Optimistic BFS.
 	
-	\mypar{Experimental setup}
-	%Specify the platform (processor, frequency, maybe OS, maybe cache sizes)
-	%as well as the compiler, version, and flags used. If your work is about performance, 
-	%I strongly recommend that you play with optimization flags and consider also icc for additional potential speedup.
-	%
-	%Then explain what kind of benchmarks you ran. The idea is to give enough information so the experiments are reproducible by somebody else on his or her code.
-	%For sorting you would talk about the input sizes. For a tool that performs NUMA optimization, you would specify the programs you ran.
-	We run experiments on three different platforms.
-	
-	The first platform is the EULER cluster which is operated by the HPC Group of ETH. 
-	We had access to one node with a 12-core Intel Xeon E5-2697v2 processors (2.7 GHz nominal, 3.0-3.5 GHz peak). 
-	As it supports hyper-threading, we ran our algorithms with up to 24 threads. 
-	On this platform, we used the gcc compiler with the -O2 flag.
-	
-	We also ran our algorithms on an Intel Xeon Phi with 61 cores. On this platform, we used the Intel icc compiler, with the -O2 flag as well.
-	
-	The last platform is an AMD FX-8350 (4GHz x8, 8Gb, W2k3).
-	
-	% TODO
-	\mypar{Results}
-%	Next divide the experiments into classes, one paragraph for each. In each class of experiments you typically pursue one questions that then is answered by a suitable plot or plots. For example, first you may want to investigate the performance behavior with changing input size, then how your code compares to external benchmarks.
-%	
-%	For some tips on benchmarking including how to create a decent viewgraph see pages 22--27 in
-	
-	
-	
-%	{\bf Comments:}
-%	\begin{itemize}
-%	\item Create very readable, attractive plots (do 1 column, not 2 column plots
-%	for this report) with readable font size. However, the font size should also not be too large; typically it is smaller than the text font size.
-%	An example is in Fig.~\ref{fftperf} (of course you can have a different style).
-%	\item Every plot answers a question. You state this question and extract the
-%	answer from the plot in its discussion.
-%	\item Every plot should be referenced and discussed.
-%	\end{itemize}
-%	
-%	\begin{figure}\centering
-%	  \includegraphics[scale=0.33]{dft-performance.eps}
-%	  \caption{Performance of four single precision implementations of the
-%	  discrete Fourier transform. The operations count is roughly the
-%	  same. The labels in this plot are maybe a little bit too small.\label{fftperf}}
-%	\end{figure}
-	
-	
-	
-	% TODO
-	\section{Conclusions}
-	
-%	Here you need to summarize what you did and why this is
-%	important. {\em Do not take the abstract} and put it in the past
-%	tense. Remember, now the reader has (hopefully) read the report, so it
-%	is a very different situation from the abstract. Try to highlight
-%	important results and say the things you really want to get across
-%	such as high-level statements (e.g., we believe that .... is the right
-%	approach to .... Even though we only considered x, the
-%	.... technique should be applicable ....) You can also formulate next
-%	steps if you want. Be brief. After the conclusions there are only the references.
-	
-	
-	
-%	% TODO
-%	\section{Further comments}
-%	
-%	Here we provide some further tips.
-%	
-%	\mypar{Further general guidelines}
-%	
-%	\begin{itemize}
-%	\item For short papers, to save space, I use paragraph titles instead of
-%	subsections, as shown in the introduction.
-%	
-%	\item It is generally a good idea to break sections into such smaller
-%	units for readability and since it helps you to (visually) structure the story.
-%	
-%	\item The above section titles should be adapted to more precisely
-%	reflect what you do.
-%	
-%	\item Each section should be started with a very
-%	short summary of what the reader can expect in this section. Nothing
-%	more awkward as when the story starts and one does not know what the
-%	direction is or the goal.
-%	
-%	\item Make sure you define every acronym you use, no matter how
-%	convinced you are the reader knows it.
-%	
-%	\item Always spell-check before you submit (to us in this case).
-%	
-%	\item Be picky. When writing a paper you should always strive for very
-%	high quality. Many people may read it and the quality makes a big difference.
-%	In this class, the quality is part of the grade.
-%	
-%	\item Books helping you to write better:
-%	
-%	\item Conversion to pdf (latex users only): 
-%	
-%	dvips -o conference.ps -t letter -Ppdf -G0 conference.dvi
-%	
-%	and then
-%	
-%	ps2pdf conference.ps
-%	\end{itemize}
-%	
-%	\mypar{Graphics} For plots that are not images {\em never} generate the bitmap formats
-%	jpeg, gif, bmp, tif. Use eps, which means encapsulate postscript. It is
-%	scalable since it is a vector graphic description of your graph. E.g.,
-%	from Matlab, you can export to eps.
-%	
-%	The format pdf is also fine for plots (you need pdflatex then), but only if the plot was never before in the format 
-%	jpeg, gif, bmp, tif.
-
-
 	\bibliographystyle 	{IEEEbib} % Roughtly column. (10-15 references).
 	\bibliography 		{bibl_conf}
 \end{document}
