@@ -461,6 +461,13 @@
 	  		\vspace*{-0.3cm}
 	  		\caption{Performance of our BFS implementations on Einstein operating on the DIMACS Kronecker graph.\label{fig:einsteinkron}}
 		\end{figure}
+		
+		\begin{figure}[t]
+			\centering
+	  		\includegraphics[scale=0.33]{optimistic_speedup.eps}
+	  		\vspace*{-0.3cm}
+	  		\caption{Speedup of Optimistic BFS on all platforms and graphs.\label{fig:speedup}}
+		\end{figure}
 
 	\subsection{Experimental results}
 		In the following plots resulting from our experiments, not all version or approaches mentioned before appear on each of the test systems. 
@@ -471,7 +478,7 @@
 		These measured average times, as well as their standard deviation, are shown in each plot.
 		The goal of these experiments is to find the best performing algorithm and to see how different approaches behave in the case of strong scaling. %i.e. increasing the number of threads for the same problem size (same graph and same starting nodes).
 
-		Firstm we take a look at the AMD system.
+		First we take a look at the AMD system.
 		In Fig. \ref{fig:amdbig} we can observe the irregular and bad performance of the non-level-synchronous approach on the AMD system for the Million graph.
 		In contrast, the Optimistic versions behave quite nicely and scale in an expected way.
 		Running the Kronecker graph on the same system results in quite different results, as shown in Fig. \ref{fig:amdkron}.
