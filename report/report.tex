@@ -100,13 +100,18 @@
 \begin{document}
 	\maketitle
 
-	\begin{abstract} % Roughtly half a column.
+	\begin{abstract} % Roughly half a column.
 		% TODO: fill at the end of writing as a brief retelling of the whole paper content.
 		 
 		%%| Describe in concise words what you do, why you do it (not necessarily
 		%%| in this order), and the main result. The abstract has to be
 		%%| self-contained and readable for a person in the general area. You
 		%%| should write the abstract last.
+
+		Breadth-first search (BFS) is a central graph traversal algorithm with many industrial applications.
+		In this paper, we will look into many different implementation of parallel BFS algorithms and compare them for different shared-memory architecture systems and multiple graphs.
+		The most promising algorithm is one to avoid synchronization, which seems to be the main culprit for performance issues.
+		Even though this algorithm performed better than the other options considered, the underlying architecture and the target graph have a big influence on its performance, which leads to the conclusion that it isn't possible to find one optimal parallel BFS algorithm without a specific architecture and a target graph in mind. %for a general shared-memory system and any graph.
 	\end{abstract}
 
 	\section{Introduction}\label{sec:intro} % Roughtly page + TODO:~4 references.
@@ -174,7 +179,7 @@
 		As our implementation of the hybrid algorithms performed much worse than other implementations, it won't be in the performance plots that are following.
 	
 		Berrendorf\cite{Berrendorf:14} describes a technique to avoid atomic operations in a generalized scenario. 
-		The scenario is given as an if-statement followed by some operations that change a state, where multiple threads might execute the predicate and execute the operations afterwards. 
+		The scenario is given as an if-statement followed by some operations that change a state, where multiple threads might execute the predicate and the operations afterwards. 
 		If the operations change the state to the same value if executed multiple times, no race condition is created, but there is a trade-off between additional work and time saving due to synchronization.
 		In the case of BFS, any unvisited vertex may get added multiple times to the neighbourhood data structure.		
 	
@@ -304,7 +309,7 @@
 		In all cases, scalability measurements were limited by the number of physical processing elements present in the test environment (including processing elements delivered by Hyper-Threading technology).
 		We used the following testbeds:
 		\begin{itemize}
-			\item \textbf{Euler}. Intel Xeon E5-2697v2 processor (2.7 GHz nominal, 3.0-3.5 GHz peak, HT enabled) with 12 physical and 24 logical cores. GNU GCC compiler with -O2 flag. 
+			\item \textbf{Euler}. Intel Xeon E5-2697v2 processor (2.7 GHz nominal, 3.0-3.5 GHz peak, HT enabled) with 12 physical and 24 logical cores. GNU GCC compiler version 4.8.2 with -O2 flag. 
 			%TODO: How much memory, what version of Linux kernel and GCC compiler was used -}
 			\item \textbf{Einstein}. Intel Xeon Phi Coprocessor 7120 (1.238 GHz base frequency, 1.333 GHz max turbo frequency) with 61 physical cores. 16 Gb of memory.
 			Intel ICC compiler Version 15.0.0.090 Build 20140723 (with -O2 flag).
@@ -378,6 +383,9 @@
 		Optimistic modified refers to a different way of initializing and managing the flag arrays.
 
 
+
+	\subsection{Experimental results}
+
 		\begin{figure}[t]
 			\centering
 	  		\includegraphics[scale=0.33]{amd_million.eps}
@@ -420,24 +428,24 @@
 	  		\caption{Performance of our BFS implementations on Einstein operating on the DIMACS Kronecker graph.\label{fig:einsteinkron}}
 		\end{figure}
 		
-		\begin{figure}[t]
-			\centering
-	  		\includegraphics[scale=0.33]{optimistic_speedup.eps}
-	  		\vspace*{-0.3cm}
-	  		\caption{Speedup of Optimistic BFS on all platforms and graphs.\label{fig:speedup}}
-		\end{figure}
+%		\begin{figure}[t]
+%			\centering
+%	  		\includegraphics[scale=0.33]{optimistic_speedup.eps}
+%	  		\vspace*{-0.3cm}
+%	  		\caption{Speedup of Optimistic BFS on all platforms and graphs.\label{fig:speedup}}
+%		\end{figure}
 
-	\subsection{Experimental results}
-		In the following plots resulting from our experiments, not all version or approaches mentioned before appear on each of the test systems. 
+
+		In the following plots resulting from our experiments, not all version or approaches mentioned before appear on each of the test platforms. 
 		The reason behind this is that some are too slow on one test environment while doing okay on another one.
 		Versions omitted from a plot can therefore be assumed slower than any of the shown algorithms.
 		
-		In the experiments multiple BFS started from different source vertices are averaged for every number of threads. 
+		In the experiments, multiple BFS started from different source vertices are averaged for every number of threads. 
 		These measured average times, as well as their standard deviation, are shown in each plot.
-		The goal of these experiments is to find the best performing algorithm and to see how different approaches behave in the case of strong scaling. %i.e. increasing the number of threads for the same problem size (same graph and same starting nodes).
+		The goal of these experiments is to find the best performing algorithm and to see how different approaches behave in the case of strong scaling.
 
-		First we take a look at the AMD system.
-		In Fig. \ref{fig:amdbig} we can observe the irregular and bad performance of the non-level-synchronous approach on the AMD system for the Million graph.
+		First, we take a look at the AMD system.
+		In Fig. \ref{fig:amdbig} we can observe the irregular and bad performance of the non-level-synchronous approach for the Million graph.
 		In contrast, the Optimistic versions behave quite nicely and scale in an expected way.
 		Running the Kronecker graph on the same system results in quite different results, as shown in Fig. \ref{fig:amdkron}.
 		While the general behaviour of all shown algorithms seems okay, the cost of doing the BFS in parallel actually makes even the best version slower than the sequential solution up to 3 threads.
@@ -458,7 +466,7 @@
 
 
 	\section{Discussion}\label{sec:disc} % Roughtly column. + ~1-2 references + 1 table
-		We now provide a analysis of the results of experimental evaluation of Optimistic BFS and other variants of parallel BFS used during our study to achieve additional insight on the base of the conducted study.
+		We now provide a analysis of the results of the experimental evaluation of Optimistic BFS and the other variants of parallel BFS used during our study to achieve additional insight on the base of the conducted study.
 		We would like to note that the study can't be considered as complete, and additional experiments and analysis need to be conducted to achieve clear understanding of all the properties of the proposed algorithm.  
 		Particularly, weak scaling experiments need to be conducted and dependencies of BFS performance on the target environment properties and target graph properties should be evaluated. 
 		
@@ -466,14 +474,13 @@
 		One of the very general conclusions from the our study is that performance characteristics of memory intensive parallel algorithms depend heavily on the specifics of the target environment, i.e. its underlying hardware architecture, operating system and compiler.
 		To understand what components of the environment play a major role on the algorithm performance characteristics, additional experiments need to be conducted.
 		But what we can see is that even on so similar hardware platforms like on AMD and Intel based implementations of an IA-32 architecture, the algorithm can demonstrate significantly different behaviour, which is surprising.
-		What we can expect is that a parallel BFS algorithm which is optimal for the all SMA architectures cannot exist at all and to achieve the best results on a particular environment, an algorithm must be developed and evaluated specially for this target environment.
+		What we can expect is that a parallel BFS algorithm which is optimal for the all SMA architectures cannot exist at all and an algorithm must be developed and evaluated for a particular environment to achieve the best results.
 		%Simple code reuse may not work if performance is really an issue. -> repeating the statement above
 		
-		This analysis also highlights the dependency of the performance of the parallel variants of BFS on the characteristics of the target graph, however it is not clear what exact characteristics affect the performance of Optimistic BFS and how they do so. 
-		But detailed understanding of these dependencies and knowledges of the characteristics of typical graphs used in particular applications can help in the development of the best performing algorithm for this particular application.
+		This analysis also highlights the dependency of the performance of the variants of parallel BFS on the characteristics of the target graph, however it is not clear what exact characteristics affect the performance of Optimistic BFS and how they do so. 
+		But detailed understanding of these dependencies and knowledges of the characteristics of typical graphs used in particular applications can help in the development of the best performing algorithm for this application.
 		
-		%In general, we can conclude that the most promising ways of parallel BFS optimization are the optimization of synchronization used and the improvement of load balancing. 
-		%The best way of synchronization optimisation is its avoidance, because even the cheapest synchronization methods like atomic instruction can be too expensive in practice. -> why concluding just before the conclusion section? 
+		
 		
 	\section{Summary and Conclusion}\label{sec:suco} % Roughly half a column.
 		In this paper we present the design, implementation, and evaluation of Optimistic BFS, a parallel version of breadth-first search for shared memory architectures.
