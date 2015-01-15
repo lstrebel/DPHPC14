@@ -110,50 +110,48 @@
 	\end{abstract}
 
 	\section{Introduction}\label{sec:intro} % Roughtly page + TODO:~4 references.
-		A graph is one of the most powerful and widely used abstract data types, because it is convenient for the representation of a wide range of real-world objects in computer applications.
+		A graph is one of the most powerful and widely used abstract data types, as it is convenient for the representation of a wide range of real-world objects in computer applications.
 		Most graph applications and appropriate algorithms involve graph traversals, during which knowledge about the graph is updated as each vertex is visited. 
 		Depth-first search (DFS) and Breadth-first search (BFS) are two basic strategies for graph traversal and searching.
-		While DFS starts the graph traversal at the root and explores as far as possible along each branch before backtracking, BFS inspects all vertices at the current distance to the root before proceeding to take a step further away. % shortened the description of bfs, as this will follow in detail in the "background" section
+		While DFS starts the graph traversal at the root and explores as far as possible along each branch before backtracking, BFS inspects all vertices at the current distance to the root before proceeding to step further away. % shortened the description of bfs, as this will follow in detail in the "background" section
 		%The set of vertices with the same minimal distance from the root vertex is called a level in terms of BFS. %-> will be explained in background section
 				
-		There are many applications of BFS, including, but not limited to, detecting all vertices within one connected component of the graph, finding the shortest path between two specified vertices, testing a graph for bipartiteness, mesh numbering, computation of the maximum flow in a flow network etc.
-		The most notable examples of its industrial applications are navigation systems for finding the shortest path between two specified destination points on a road network, web indexing performed by web crawlers used by web search engines to keep their search database up-to-date, and social interconnections investigation on the basis of social networks. % removed some examples to keep the introduction shorter
+		There are many applications of BFS, including, but not limited to, detecting all vertices within one connected component in a graph, finding the shortest path between two specified vertices, testing for bipartiteness, mesh numbering, computation of the maximum flow in a flow network etc.
+		The most notable examples of its industrial applications are navigation systems for finding the shortest path between two specified destination points on a road network, web indexing performed by web crawlers used by web search engines to keep their search database up-to-date and social interconnections investigation on the basis of social networks. % removed some examples to keep the introduction shorter
 		
-		At this time, the information technology industry is experiencing a great shift introduced by mass migration to multi-core processors and the emergence of many-core computer systems (up to 120/240 physical/logical cores in theory and 60/120 physical/logical cores in practice on Intel platform, up to 64 physical cores on AMD platform) and coprocessors (computation accelerators) like Intel Xeon Phi (up to 61 physical cores).
+		At this time, the information technology industry is experiencing a great shift introduced by mass migration to multi-core processors and the emergence of many-core computer systems (up to 120/240 physical/logical cores in theory and 60/120 physical/logical cores in practice on Intel platforms) and coprocessors (computation accelerators) like Intel Xeon Phi (up to 61 physical cores).
 		All these wide-spreading and emerging computer systems are examples of shared memory architectures (SMA).
 %		Wide dissemination of computer systems with shared memory architecture and trends indicating that the development of such systems is the main direction of the further performance improvement of computer systems on one hand, and the widespread use of BFS for a wide range of applications on the other hand, make the question about the most efficient and scalable variant of parallel version of BFS in the environment of such kind of systems relevant to this time.
 		This trend, and the widespread use of BFS for a wide range of applications, make the question about the most efficient and scalable variant of parallel version of BFS in the environment of such kind of systems relevant to this time.
 		
-		In this paper, we describe an experimental study of different variants of and approaches to parallel BFS algorithms based on OpenMP for SMA computer systems and the design, implementation and evaluation of the variant we finally came up with as the most promising.
-		We refer to this variant as optimistic parallel BFS.
-		According to our experimental results, it significantly outperforms all other approaches in the environments of AMD SMA platform and Intel Xeon Phi accelerator.
-		Our experiments and analysis of its results highlighted that the efficiency of BFS algorithm variants heavily depend on the properties of the underlying environment (hardware platform, operating system, compiler), as well as on the properties of the graph to which it is applied.
-%		We conclude also that the cost of synchronization which is usually used for preserving consistency can be too high, but can in some cases be eliminated.
+		In this paper, we describe an experimental study of different approaches to parallel BFS algorithms based on OpenMP for SMA computer systems and the design, implementation and evaluation of the variant we finally came up with as the most promising.
+		We refer to this algorithm as optimistic parallel BFS.
+%		According to our experimental results, it significantly outperforms most other approaches in the environments of AMD SMA platform and Intel Xeon Phi accelerator.
+%		Our experiments and analysis of its results highlight that the efficiency of BFS algorithm variants heavily depend on the properties of the underlying environment (hardware platform, operating system, compiler), as well as on the properties of the graph to which it is applied. % -> take these two sentences out, the introduction doesn't have to give the results
 		
-%		It is important to note that the optimistic parallel BFS can't be considered a universal optimal variant of BFS for all kinds of the SMA computer systems.
-%		Instead it must be considered as a source of a more general approach to the implementation of BFS for the environment of a particular kind of SMA system.
-		It is important to note that the optimistic parallel BFS can't be considered a universal optimal variant of BFS for all kinds of the SMA computer systems, but more as a source of a more general approach to the implementation of BFS for the environment of a particular kind of SMA system.
-		To achieve optimal results for a particular computer system, investigation of different variants of parallel BFS and the most suitable optimizations must be done. % for the environment of the system of interest. % -> already mentioned at beginning of sentence %, because our results tell us that the efficiency of BFS itself and optimizations used in it heavily depend on the target environment. 
+		It is important to note that the optimistic parallel BFS can't be considered a universal optimal variant of BFS for all SMA computer systems, but more as a source of a general approach to the implementation of BFS for the environment of a particular kind of SMA system.
+		To achieve optimal results for a particular computer system, different variants of parallel BFS need to be investigated and the most suitable optimizations must be done.
 	
 	\section{Background: Breadth-first search}\label{sec:background} %TODO: Remove this section. Get most important info from here and merge in other sections.
 		
-	In this section, we will give a brief overview over the idea of breadth-first search and its sequential asymptotic runtime cost, as well as a short discussion of different graphs and graph properties. 
+	In this section, we will give a brief overview over the idea of breadth-first search and its sequential asymptotic runtime cost, as well as a short discussion of different graphs. 
 	
 	
 	\mypar{Breadth-first search}
 	Breadth-first search (BFS) is a graph traversal algorithm which starts at a source vertex and either travels until it finds a specific vertex or until it has explored all connected vertices. 
-	In the first step, all vertices adjacent to the source are explored and stored in some data structure (called frontier or next) as well as marked as visited. 
-	In the second step, the newly visited vertices become the new sources (called neighbours or current) from which the search continues by repeating this step. 
-	Doing a traversal this way assures that all the nodes at the same distance to the source are explored before any vertices with greater distance can be explored. 
-	All the vertices with the same minimal distance to the source are called level.
+	In the first step, all vertices adjacent to the source (called ``neighbourhood'') are explored and stored in some data structure as well as marked as visited. 
+	In the second step, the newly visited vertices become the new sources (called ``frontier'') from which the search continues by repeating this step. 
+	Doing a traversal this way assures that all the nodes at the same distance to the source (i.e. in the same level) are visited before any vertices with a greater distance can be explored. 
+%	All the vertices with the same minimal distance to the source are called level.
 	
-	The desired output of a BFS can differ depending on where it is applied. With minimal modifications BFS can deliver a predecessor map, where every vertex points to only one parent, or a distance map, where the distance to the source is stored for every vertex. Since the predecessor map is not necessarily unique, we choose to return a distance map as our output to make verification of correctness simpler.  
+	The desired output of a BFS can vary depending on where it is applied. With minimal modifications, BFS can deliver a predecessor map, where every vertex points to only one parent, or a distance map, which stores the distance to the source for every vertex. Since the predecessor map is not necessarily unique, we choose to return a distance map as our output to make verification of correctness simpler.  
 	
-	The sequential version of a BFS can be implemented using a single queue and has a theoretical asymptotic runtime of $\mathcal{O}(\lvert V\rvert + \lvert E\rvert )$, where $\lvert V\rvert$ is the number of vertices and $\lvert E\rvert$ the number of edges in the connected graph.
+	The sequential version of a BFS can be implemented using a single FIFO queue and has a theoretical asymptotic runtime of $\mathcal{O}(\lvert V\rvert + \lvert E\rvert )$, where $\lvert V\rvert$ is the number of vertices and $\lvert E\rvert$ the number of edges in the connected graph.
 	
 	
 	\mypar{Graphs}
-	As previously mentioned graphs are a widely used abstract data type, which, depending on their source and use, can have widely different properties which in turn can create strong variations in the performance of BFS and other graph algorithms.
+	As previously mentioned, graphs are a widely used abstract data type, which, depending on their source and use, can have widely different properties.
+	This in turn can create strong variations in the performance of BFS and other graph algorithms.
 	
 	To account for this, we used real world graphs and specific synthetic graphs provided by the University of Florida Sparse Matrix Collection \cite{SparseMatrixCollection}, notably some graphs from the DIMACS10 challenge, in our test and experimental cases.
 	The mentioned synthetic graphs are mostly so called Kronecker graphs \cite{Leskovec:2010:KGA:1756006.1756039}, which are generative network graphs that obey the main static network patterns observed in real networks.
@@ -162,47 +160,43 @@
 
 
 	\section{Related work} \label{sec:rewo} % Roughtly column. + ~8 references.
-		BFS is not an easy candidate for parallelisation.
+		BFS is not an easy candidate for parallelization.
 		It is inherently memory intensive and has poor spatial locality which introduces significant performance loss on today's computer systems with the growing gap between CPU performance, memory performance and increasing memory latencies.
 		As a result, scalability of a parallel version of BFS will be bound by the performance characteristics of the memory subsystem of the target computer system. 
 		Nevertheless, intensive use of BFS in the wide range of the applications creates a high interest in the most efficient and scalable versions of parallel BFS.
 		As a result, a number of papers were published in this field. 
 		
-		Beamer et al.\cite{beamer2011searching} report a different algorithm to deal with the performance issues encountered when designing a BFS algorithm. 
-		The proposed hybrid algorithm combines the usual top-down approach with a new bottom-up part. 
-		In the bottom-up part, a level is processed by searching a parent for all unvisited vertices, where a parent is only valid if it is a neighbour of the unvisited vertex. 
-		This is advantageous for small-world graphs because it saves accesses and data processing when a large fraction of the vertices are in the frontier. 
-		To get optimal results, a hybrid algorithm is proposed where a heuristic switching criteria controls the use of top-down or bottom-up step depending on the size of the frontier and a predicted size of the next frontier. 
+		Beamer et al.\cite{beamer2011searching} propose a hybrid algorithm which combines the usual top-down approach with a new bottom-up part. 
+		In the bottom-up part, a level is processed by going through all unvisited vertices and searching for a parent in the current level. 
+		This is advantageous for small-world graphs because it saves data processing when a large fraction of the vertices are already visited. 
+		To get optimal results, a heuristic switching criteria based  on the size of the frontier and a predicted size of the next frontier is proposed. 
 		Yasui et al.\cite{6691600} describe an implementation of such a hybrid algorithm for Kronecker and R-MAT graphs, as well as a detailed description of the heuristic switching parameters.
+		As our implementation of the hybrid algorithms performed much worse than other implementations, it won't be in the performance plots that are following.
 	
 		Berrendorf\cite{Berrendorf:14} describes a technique to avoid atomic operations in a generalized scenario. 
 		The scenario is given as an if-statement followed by some operations that change a state, where multiple threads might execute the predicate and execute the operations afterwards. 
-		The operations need to change the state to the same value if executed multiple times, otherwise there exists a race condition, i.e. the change of the distance of a visited vertex to the value of the level or the addition of a vertex to the next frontier. 
-		The trade-off is that doing a BFS this way can result in additional work, since any unvisited vertex may get added multiple times.
-		
+		If the operations change the state to the same value if executed multiple times, no race condition is created, but there is a trade-off between additional work and time saving due to synchronization.
+		In the case of BFS, any unvisited vertex may get added multiple times to the neighbourhood data structure.		
 	
-		In our final proposed technique we go the way of avoiding atomic operations and synchronization within levels at all.
-		The only synchronization point left in our proposed algorithm is an implicit barrier between the processing of different levels of the graph.
-		
-		%In addition to this, we have compared a number of different approaches based on different synchronization primitives and techniques and load balancing strategies. -> doesn't really fit into related works and will be mentioned later on
-
+		For our final proposed technique we go the way of avoiding atomic operations and synchronization within levels at all.
+		The only synchronization point left in our is an implicit barrier between the processing of different levels.
 	
 	
 	\section{Design and implementation}\label{sec:deim} % Roughtly page + half a column. + 1 code snippet
 		The goal of our efforts is to achieve the most efficient and scalable algorithm of parallel BFS for Shared Memory Architectures. 
 
 		\subsection{Possible directions of performance boosting}
-			There are three main directions of performance boosting in the way of making BFS parallel.
+			There are three main directions of performance boosting in the way of parallelizing BFS.
 			
 			\textbf{Improvement of cache utilization.}
-			It is not a secret that due to the big gap between the performance of CPU subsystems and the memory subsystem performance of modern computer systems, as well as latencies of memory access, make the performance of the algorithms highly sensitive to the provided CPU cache utilization. 
-			Introduction of multicore computer systems made the problem even more complex because  we are now forced to think about careful splitting of the active data set between all available processors to avoid cache misses introduced by cache lines flip-flopping. 
+			It is not a secret that due to the big gap between the performance of CPU and memory subsystems of modern computer systems, as well as latencies of memory access, make the performance of the algorithms highly sensitive to the provided CPU cache utilization. 
+			The introduction of multicore computer systems made the problem even more complex, because we are now forced to think about careful splitting of the active data set between all available processors to avoid cache misses induced by cache lines flip-flopping. 
 			Unfortunately, in the case of the BFS, we are forced to work with a data set with inherently poor spatial locality. 
 			Due to this, this way of optimization was rejected.
 			
 			\textbf{Load balancing improvement.} 
 			Goal of this approach is to achieve highest possible level of overall utilization of all available processor elements by avoiding the idle time of CPUs introduced by waiting for the arrival of a new job.
-			It is one of the promising approaches, because the classical approach to BFS parallelisation relies on a sequential graph level processing where each level is processed in parallel.
+			It is one of the promising approaches, because the classical approach to BFS parallelization relies on a sequential graph level processing where each level is processed in parallel.
 			As a result, all CPUs that finished their work are forced to wait until the processing of the current level will be accomplished by other still busy processors.
 			Nonetheless, this direction was rejected in favour of the synchronization avoidance. 
 			
@@ -322,18 +316,14 @@
 		The experiments include two different graphs:
 		\begin{itemize}
 			\item \textbf{Million}. A huge real world graph includes 1 million nodes and $\sim$3 million edges.
-			\item \textbf{DIMACSKRON}. A Kronecker graph used in the DIMACS10 Challenge. Consists of $\sim$500k nodes and $\sim$21 million edges.
+			\item \textbf{Kronecker}. A Kronecker graph used in the DIMACS10 Challenge. Consists of $\sim$500k nodes and $\sim$21 million edges.
 		\end{itemize}
 		
 		\subsection{Compared different approaches}\label{sec:approaches}
 		
 		We implemented many different algorithms and multiple variants for most of them. 			%All of them return a distance map from one source vertex to all reachable vertices in the graph. -> mentioned before, not that important
-		All our implementations are based on OpenMP for synchronization.
-		Most of our approaches are based on a simple top-down algorithm. 
-		%The idea is to do a level-synchronous traversal of the graph by keeping record of the vertices in the current as well as those in the next level (``frontier'' and ``neighbour'') in two data structures of the same type. 
-		%We then set the frontier to the current neighbours after each level. 
-		%This leads to an implicit barrier, as the threads that finish earlier have to wait on the others before proceeding to the next level.
-		%We experimented with different data structures and synchronization methods.
+		All our implementations are based on OpenMP for parallelization.
+		Most approaches are based on a simple top-down algorithm. 
 
 		\mypar{Top-down naive}
 		% naive
@@ -344,10 +334,10 @@
 		\mypar{Top-down CAS}
 		% topdownCAS
 		% using CAS (check visited) + OMP critical section (add to frontier), also vector frontier. Idea from paper by Berrendorf
-		To improve the naive implementation, the first approach to get rid of the critical section as it produced a lot of overhead. 
+		To improve the naive implementation, the first approach is to get rid of the critical section as it produced a lot of overhead. 
 		We attempted this by using an atomic, the built-in \verb+__sync_val_compare_and_swap+ (CAS), to atomically check whether a vertex was visited and setting the correct distance. 
 		In addition to the atomic, this variant uses a local neighbourhood data structure (standard vector) to be able to work without a critical section. 
-		Only at the end of each level a lock (\verb+omp_lock_t+) is needed to combine the local neighbourhoods to a global one, which can then be distributed between the threads for the next level. 
+		Only at the end of each level a lock (\verb+omp_lock_t+) is necessary to combine the local neighbourhoods to a global one, which can then be distributed between the threads for the next level. 
 		This is an idea adapted from Berrendorf \cite{Berrendorf:14}.
 		
 		% topdown_ifCAS
@@ -357,19 +347,18 @@
 		This lets us treat the cases where a vertex has already been visited without any synchronization.
 
 		\mypar{Top-down non-atomic}
-
 		% maybe better leave this method out, as it is fairly similar to the optimistic approach. The only difference lies in the data structures used.
 		%
 		% topdown_nonatomic
 		Doing the visited check from the previous versions in a non atomic way adds additional work but no harmful race condition.
-		This implementation uses a local neighbourhood and (\verb+omp_lock_t+) to add them together, which means it still has to use synchronisation in constrast to the optimistic approach.
+		This implementation uses a local neighbourhood and \verb+omp_lock_t+ to add them together, which means it still has to use synchronisation in contrast to the optimistic approach.
 	%	Also inspired by Berrendorf \cite{Berrendorf:14} is the idea to remove atomics altogether. 
 	%	This results in a race condition where additional work for the next level is created, as some vertices might be added to the neighbours multiple times. 
 	%	However, expensive atomics are omitted, which results in a trade-off between the additional time from the added work and the faster runtime by leaving out the CAS. 
 	%	This algorithm still uses a local neighbourhood and a lock when combining them.
 
 		\mypar{Non-level-synchronous}
-		Very different approach to the BFS problem. Ignoring the implicit level barrier allows threads to manage their own queues without synchronisation. But doing so adds the need to check atomically if any visited node was visited from a different thread in a later level.
+		Very different approach to the BFS problem. Ignoring the implicit level barrier allows threads to manage their own queues without synchronization. But doing so adds the need to check atomically if any visited node was visited from a different thread in a later level.
 		% tbb_parallelqueue
 		% doing a top-down method using 1x OMP single for level synchronization and TBB concurrentqueue as a concurrent frontier
 
@@ -377,15 +366,15 @@
 		% using only implicit OMP barrier for level synchronization. switching between two TBB parallelqueue frontiers
 
 		\mypar{TBB Concurrent Queue}
-		To compare all synchronisation approaches we also looked into concurrent data structures to solve the synchronisation problem of the algorithm.
-		The design and implementation of such a data structure is a subject of its own and beyond the scope of this paper. Therefore instead of focusing on designing or implementing such a concurrent queue ourselves we used the one implemented in the Intel Threading Building Blocks library (Intel TBB version 4.3).
+		To compare all synchronization approaches we also looked into concurrent data structures to solve the synchronisation problem of the algorithm.
+		The design and implementation of such a data structure is a subject of its own and beyond the scope of this paper. Therefore, instead of focusing on designing or implementing a concurrent queue ourselves, we used the one in the Intel Threading Building Blocks library (Intel TBB version 4.3).
 		%We found that using two concurrent queues for the neighbour and frontier and swapping them between levels in the same way as in the above mentioned implementations diminishes the time saved by not using explicit synchronisation significantly.
 		%To perform better we implemented a version that uses two concurrent queues that instead of swapping just switch roles from frontier to neighbour and vice versa after each level.
 		%This way the swapping in the serial part of the implementation is replaced by a few if-statements while essentially doing the same algorithm.
 		Our implementation uses two concurrent queues that switch roles from frontier to neighbour and vice versa after each level to avoid having a costly swap operation in the sequential part between levels.
 
 		\mypar{Optimistic}
-		The optimistic version refers to our best implementation described in detail in section \ref{sec:deim} ``Design and implementation''.
+		This refers to our best implementation described in detail in section \ref{sec:deim} ``Design and implementation''.
 		Optimistic modified refers to a different way of initializing and managing the flag arrays.
 
 
@@ -474,26 +463,24 @@
 		Particularly, weak scaling experiments need to be conducted and dependencies of BFS performance on the target environment properties and target graph properties should be evaluated. 
 		
 		%Using the results of our experiments, we determined that the performance of a particular BFS implementation heavily depends on two major groups of factors. <- unnecessary
-		One of the very general conclusions from the our study is that performance characteristics of the memory intensive parallel algorithms depends heavily on the specifics of the target environment, i.e. its underlying hardware architecture, operating system and compiler.
+		One of the very general conclusions from the our study is that performance characteristics of memory intensive parallel algorithms depend heavily on the specifics of the target environment, i.e. its underlying hardware architecture, operating system and compiler.
 		To understand what components of the environment play a major role on the algorithm performance characteristics, additional experiments need to be conducted.
 		But what we can see is that even on so similar hardware platforms like on AMD and Intel based implementations of an IA-32 architecture, the algorithm can demonstrate significantly different behaviour, which is surprising.
-		What we can expect is that a parallel BFS algorithm which is optimal for the all SMA architectures cannot exist at all and to achieve the best results on a particular environment an algorithm must be developed and evaluated specially for this target environment.
+		What we can expect is that a parallel BFS algorithm which is optimal for the all SMA architectures cannot exist at all and to achieve the best results on a particular environment, an algorithm must be developed and evaluated specially for this target environment.
 		%Simple code reuse may not work if performance is really an issue. -> repeating the statement above
 		
-		This analysis also highlights the dependency of the performance of the parallel variants of BFS on the characteristics of the target graph.
-		It is not clear what exact characteristics of the target graph affect the performance of Optimistic BFS and how they do so. 
+		This analysis also highlights the dependency of the performance of the parallel variants of BFS on the characteristics of the target graph, however it is not clear what exact characteristics affect the performance of Optimistic BFS and how they do so. 
 		But detailed understanding of these dependencies and knowledges of the characteristics of typical graphs used in particular applications can help in the development of the best performing algorithm for this particular application.
 		
 		%In general, we can conclude that the most promising ways of parallel BFS optimization are the optimization of synchronization used and the improvement of load balancing. 
 		%The best way of synchronization optimisation is its avoidance, because even the cheapest synchronization methods like atomic instruction can be too expensive in practice. -> why concluding just before the conclusion section? 
 		
-	\section{Summary and Conclusion}\label{sec:suco} % Roughtly half a column.
+	\section{Summary and Conclusion}\label{sec:suco} % Roughly half a column.
 		In this paper we present the design, implementation, and evaluation of Optimistic BFS, a parallel version of breadth-first search for shared memory architectures.
 		
 		We demonstrate through experiments that this algorithm and the approach on synchronization avoidance in many cases outperforms not only approaches relying on cheap synchronization methods, but also approaches focused on improvement of load balancing. 		
 		In fact, we observe that the even cheap synchronization methods can be very destructive for the performance and scalability of the algorithm.  
 		Almost complete avoidance of synchronization results in a significant improvement of the performance and determinism of BFS. 
-		
 		In our experimental evaluation, we found that the level of optimality of BFS algorithms heavily depends on characteristics of the target environment. % , consisting of CPU architecture, operating system and compiler used, and on characteristics of the target graph. -> detailed describtion already in discussion, is it needed here?
 		%In other words, for different target environments and graphs, different variants of parallel BFS can be optimal. -> just repeating statement
 		
