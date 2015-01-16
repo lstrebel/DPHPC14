@@ -144,9 +144,9 @@
 	
 		\section{Related work} \label{sec:rewo} % Roughly column. + ~8 references.
 		BFS is not an easy candidate for parallelization.
-		It is inherently memory intensive and has poor spatial locality which introduces significant performance loss on today's computer systems with the growing gap between CPU performance, memory performance and increasing memory latencies.
-		As a result, scalability of a parallel version of BFS will be bound by the performance characteristics of the memory subsystem of the target computer system. 
-		Nevertheless, intensive use of BFS in the wide range of the applications creates a high interest in the most efficient and scalable versions of parallel BFS.
+		It is inherently memory intensive and has poor spatial locality which introduces significant performance loss on todays computer systems with the growing gap between CPU performance, memory performance and increasing memory latencies.
+		Therefore scalability of a parallel version of BFS will be bound by the performance characteristics of the memory subsystem of the target computer system. 
+		Nevertheless, intensive use of BFS in a wide range of applications creates a high interest in the most efficient and scalable versions of parallel BFS.
 		As a result, a number of papers were published in this field. 
 		
 		Beamer et al.\cite{beamer2011searching} propose a hybrid algorithm which combines the usual top-down approach with a new bottom-up part. 
@@ -164,7 +164,6 @@
 		For our final proposed technique we go the way of avoiding atomic operations and synchronization within levels at all.
 		The only synchronization point left in our algorithm is an implicit barrier between the processing of different levels.
 		
-		In addition to this, we have compared a number of different approaches based on different synchronization primitives and techniques and load balancing strategies.
 		In addition to this, we have compared a number of different approaches based on different synchronization primitives and techniques and load balancing strategies. %TODO
 	
 	
@@ -245,12 +244,12 @@
 			The graph description is a list of lists, in which each top-level list denotes one of the graph vertices and the bottom level list enumerates all neighbours of the appropriate vertex, thus denoting all edges connected to it.
 			The algorithm returns a distance map for the specified root node.
 			
-			The core of the proposed algorithm is classical. 
+			The core of the proposed algorithm is classic.
 			It is a level by level sequential top-down walk through the graph, where in each iteration we discover all unvisited neighbours of the vertices in the current level.
 			
 			One of the core design decision is related to memory management.
-			The classical approach employs dynamic data structures like lists and queues which are used for the member vertices of the current level.
-			This approach is poorly suited for efficient parallelism, because it explicitly introduces a synchronization point and can introduce implicit synchronization points via memory chunk allocation/deallocation. 
+			The classic approach employs dynamic data structures like lists and queues which are used for the member vertices of the current level.
+			This approach is poorly suited for efficient parallelism, because it explicitly introduces a synchronization point and can introduce implicit synchronization points via memory chunk allocation / deallocation. 
 			Instead we propose to use raw memory chunks allocated and freed only once in the prologue and epilogue of the algorithm.
 			Our approach utilize $3 \cdot number\_of\_the\_node$ bytes of memory allocated in 4 equal chunks:
 			\begin{enumerate}
@@ -259,10 +258,10 @@
 				\item Flag array used for tracking of the next level nodes.
 			\end{enumerate}
 			
-			After the end of each level processing the last two flag arrays exchange their roles by simple and efficient pointer swapping, and next level nodes array is resetting.
-			As a result, each level processing started with set of current level nodes collected during previous level processing and clear map of next level nodes. 
+			After the end of each level processing the last two flag arrays exchange their roles by simple and efficient pointer swapping, and next level nodes array is reset.
+			As a result, each level processing start with the set of current level nodes collected during the previous level and clear map of next level nodes. 
 
-			A byte per node memory allocation scheme was chosen instead of classical bit masks because it allows to simplify memory access patterns and eliminate synchronization that would be required otherwise.
+			A byte per node memory allocation scheme was chosen instead of common bit masks because it allows to simplify memory access patterns and eliminate synchronization that would be required otherwise.
 			Bit mask updates via OR operation include two elementary memory access operations, because this operation is an example of a read-modify-write operation.
 			Thus, it introduces source of inconsistency in the concurrent environment.
 			This inconsistency can be easily fixed by the use of a lock prefix (atomic operations on Linux and interlocked operations on Windows), but this will mean one more point of synchronization which we are trying to eliminate.
@@ -272,12 +271,12 @@
 			On each iteration algorithm performs processing only for vertices specified by the flag array of the current level nodes.
 			For such vertices, the algorithm updates the distance map, the flag array of visited vertices and the flag array for the next level of all unvisited neighbour vertices.
 			
-			The most important point in this algorithm that it doesn't use any synchronization in the body of the parallel for loop.
-			As a result it prone to the race conditions when two or more concurrently processing current nodes leads to the handling of the same node which is neighbour node of both.
-			But in fact, this is a false race condition, because firstly, algorithm for each iteration algorithm separates from each other data (and memory storing them) which will be read and which will be updated, and secondly it provide a guarantee that the same memory locations will be updated by the same values.
+			The most important point of this algorithm is that it doesn't use any synchronization in the body of the parallel for loop.
+			As a result it is prone to a race conditions when two or more concurrently processing current nodes lead to the handling of the same node as a neighbour node of both.
+			But in fact, this is a false race condition, because firstly, for each iteration, the algorithm separates the data that will be read and the data which will be updated, and secondly it provides a guarantee that the same memory locations will be updated to the same values.
 			As a result consistency of the data is preserved during entire graph processing time and guarantees consistency of results even without use of explicit synchronization.
-			On the other hand such false race conditions leads to the possible useless work done due to the concurrent processing of the same neighbour vertices.
-			Due to this we call this approach optimistic, because each iteration is made in hope that its result will be valuable for the overall progress.  
+			On the other hand such false race conditions lead to possible waste of work done due to the concurrent processing of the same neighbour vertices.
+			Due to this we call this approach optimistic, because each iteration is made in the hope that its result will be valuable to the overall progress.  
 			
 			
 	\section{Experiments}\label{sec:expe} % Roughly two pages - half a column. + 4 plots
@@ -290,7 +289,7 @@
 			%TODO: How much memory, what version of Linux kernel and GCC compiler was used -}
 			\item \textbf{Einstein}. Intel Xeon Phi Coprocessor 7120 (1.238 GHz base frequency, 1.333 GHz max turbo frequency) with 61 physical cores. 16 Gb of memory.
 			Intel ICC compiler Version 15.0.0.090 Build 20140723 (with -O2 flag).
-			Running on Linux version 2.6.32-431.el6.x86.64.
+			Running on Linux 2.6.32-431.el6.x86.64.
 			
 
 			\item \textbf{AMD}. AMD FX-8350 (4GHz nominal, 4.2GHz peak) with 8 physical cores. 8 Gb of memory. Microsoft Windows Server 2003 with PAE enabled. Microsoft Visual Studio 2008 Professional with  Microsoft C++ compiler 9.00.30729.01 with full optimization enabled.
@@ -449,15 +448,15 @@
 
 
 	\section{Discussion}\label{sec:disc} % Roughly column. + ~1-2 references + 1 table
-		We now provide a analysis of the results of the experimental evaluation of Optimistic BFS and the other variants of parallel BFS used during our study to achieve additional insight on the base of the conducted study.
-		We would like to note that the study can't be considered as complete, and additional experiments and analysis need to be conducted to achieve clear understanding of all the properties of the proposed algorithm.  
+		We now provide an analysis of the results of the experimental evaluation of Optimistic BFS and the other variants to achieve additional insight on the base of the conducted study.
+		We would like to note that the study can't be considered as complete and additional experiments and analysis need to be conducted to achieve clear understanding of all the properties of the proposed algorithm.  
 		Particularly, weak scaling experiments need to be conducted and dependencies of BFS performance on the target environment properties and target graph properties should be evaluated. 
 		
 		%Using the results of our experiments, we determined that the performance of a particular BFS implementation heavily depends on two major groups of factors. <- unnecessary
 		One of the very general conclusions from the our study is that performance characteristics of memory intensive parallel algorithms depend heavily on the specifics of the target environment, i.e. its underlying hardware architecture, operating system and compiler.
-		To understand what components of the environment play a major role on the algorithm performance characteristics, additional experiments need to be conducted.
-		But what we can see is that even on so similar hardware platforms like on AMD and Intel based implementations of an IA-32 architecture, the algorithm can demonstrate significantly different behaviour, which is surprising.
-		What we can expect is that a parallel BFS algorithm which is optimal for the all SMA architectures cannot exist at all and an algorithm must be developed and evaluated for a particular environment to achieve the best results.
+		%To understand what components of the environment play a major role on the algorithm performance characteristics, additional experiments need to be conducted. <- mentioned just a paragraph before
+		What we can see is that even on so similar hardware platforms like the AMD and Intel based implementations of an IA-32 architecture, the algorithm can demonstrate significantly different behaviour, which is surprising.
+		What we can expect is that a parallel BFS algorithm which is optimal for all SMA architectures cannot exist at all and an algorithm must be developed and evaluated for a particular environment to achieve the best results.
 		%Simple code reuse may not work if performance is really an issue. -> repeating the statement above
 		
 		This analysis also highlights the dependency of the performance of the variants of parallel BFS on the characteristics of the target graph, however it is not clear what exact characteristics affect the performance of Optimistic BFS and how they do so. 
@@ -468,11 +467,11 @@
 	\section{Summary and Conclusion}\label{sec:suco} % Roughly half a column.
 		In this paper we present the design, implementation, and evaluation of Optimistic BFS, a parallel version of breadth-first search for shared memory architectures.
 		
-		We demonstrate through experiments that this algorithm and the approach on synchronization avoidance in many cases outperforms not only approaches relying on cheap synchronization methods, but also approaches focused on improvement of load balancing. 		
+		We demonstrate through experiments that this algorithm and the approach on synchronization avoidance outperforms in many cases not only approaches relying on cheap synchronization methods, but also approaches focused on improvement of load balancing. 		
 		In fact, we observe that the even cheap synchronization methods can be very destructive for the performance and scalability of the algorithm.  
-		Almost complete avoidance of synchronization results in a significant improvement of the performance and determinism of BFS. 
+		Almost complete avoidance of synchronization results in a significant improvement of the performance of BFS. % and determinism <- ?
 		
-		In our experimental evaluation, we found that the level of optimality of BFS algorithms heavily depends on characteristics of the target environment, including CPU architecture, operating system and compiler used, and on characteristics of the target graph.
+		In our experimental evaluation, we found that the level of optimality of BFS algorithms heavily depends on characteristics of the target environment and on characteristics of the target graph. % , including CPU architecture, operating system and compiler used, -> already mentioned in detail in the discussion section.
 		
 		In future work, it would be of interest to figure out what component of the Euler test environment is a main source of performance degradation of Optimistic BFS and thus find for which set of target environments it would be most optimal.  		
 		It also would be interesting to figure out the relationships of the performance provided by optimistic BFS depending of different graph characteristics and hence find out for what class of graphs it would be most optimal.
