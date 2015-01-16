@@ -26,7 +26,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\algrenewcommand\algorithmicrequire{\textbf{Input:}} % "Input" instead of "Require" in code snippet
 
-	% begin vertical rule patch for algorithmicx (http://tex.stackexchange.com/questions/144840/vertical-loop-block-lines-in-algorithmicx-with-noend-option)
+	% begin vertical rule patch for algorithmicx/algpseudocode (http://tex.stackexchange.com/questions/144840/vertical-loop-block-lines-in-algorithmicx-with-noend-option)
 	\makeatletter
 	% start with some helper code
 	% This is the vertical rule that is inserted
@@ -108,13 +108,13 @@
 		%%| self-contained and readable for a person in the general area. You
 		%%| should write the abstract last.
 
-		Breadth-first search (BFS) is a central graph traversal algorithm with many industrial applications.
-		In this paper, we will look into many different implementation of parallel BFS algorithms and compare them for different shared-memory architecture systems and multiple graphs.
-		The most promising algorithm is one to avoid synchronization, which seems to be the main culprit for performance issues.
-		Even though this algorithm performed better than the other options considered, the underlying architecture and the target graph have a big influence on its performance, which leads to the conclusion that it isn't possible to find one optimal parallel BFS algorithm without a specific architecture and a target graph in mind. %for a general shared-memory system and any graph.
+		Breadth-first search (BFS) is a crucial graph traversal algorithm with many industrial applications.
+		In this paper, we will look into several implementations of parallel BFS algorithms and compare their performance for different shared-memory architecture systems and multiple graphs.
+		The most promising algorithm is one to avoid explicit synchronization, which seems to be the main culprit for performance issues.
+		Even though the finally proposed algorithm performed better than the other options considered, the underlying architecture and the target graph have a big influence on its performance, which leads to the conclusion that it isn't possible to find one optimal parallel BFS implementation without a specific architecture and a target graph in mind.
 	\end{abstract}
 
-	\section{Introduction}\label{sec:intro} % Roughtly page + TODO:~4 references.
+	\section{Introduction}\label{sec:intro} % Roughly page + TODO:~4 references.
 		A graph is one of the most powerful and widely used abstract data types, as it is convenient for the representation of a wide range of real-world objects in computer applications.
 		Most graph applications and appropriate algorithms involve graph traversals, during which knowledge about the graph is updated as each vertex is visited. 
 		Depth-first search (DFS) and Breadth-first search (BFS) are two basic strategies for graph traversal and searching.
@@ -164,7 +164,7 @@
 	
 
 
-	\section{Related work} \label{sec:rewo} % Roughtly column. + ~8 references.
+	\section{Related work} \label{sec:rewo} % Roughly column. + ~8 references.
 		BFS is not an easy candidate for parallelization.
 		It is inherently memory intensive and has poor spatial locality which introduces significant performance loss on today's computer systems with the growing gap between CPU performance, memory performance and increasing memory latencies.
 		As a result, scalability of a parallel version of BFS will be bound by the performance characteristics of the memory subsystem of the target computer system. 
@@ -187,7 +187,7 @@
 		The only synchronization point left in our is an implicit barrier between the processing of different levels.
 	
 	
-	\section{Design and implementation}\label{sec:deim} % Roughtly page + half a column. + 1 code snippet
+	\section{Design and implementation}\label{sec:deim} % Roughly page + half a column. + 1 code snippet
 		The goal of our efforts is to achieve the most efficient and scalable algorithm of parallel BFS for Shared Memory Architectures. 
 
 		\subsection{Possible directions of performance boosting}
@@ -303,7 +303,7 @@
 			For such vertices, the algorithm updates the distance map, the flag array of visited vertices and the flag array for the next level of all unvisited neighbour vertices.
 
 	
-	\section{Experiments}\label{sec:expe} % Roughtly two pages - half a column. + 4 plots
+	\section{Experiments}\label{sec:expe} % Roughly two pages - half a column. + 4 plots
 		We present experimental results to demonstrate the performance gains that can be realized with Optimistic BFS.
 		There are three experimental testbeds used in the experiments. 
 		In all cases, scalability measurements were limited by the number of physical processing elements present in the test environment (including processing elements delivered by Hyper-Threading technology).
@@ -356,7 +356,7 @@
 		%
 		% topdown_nonatomic
 		Doing the visited check from the previous versions in a non atomic way adds additional work but no harmful race condition.
-		This implementation uses a local neighbourhood and \verb+omp_lock_t+ to add them together, which means it still has to use synchronisation in contrast to the optimistic approach.
+		This implementation uses a local neighbourhood and \verb+omp_lock_t+ to add them together, which means it still has to use synchronization in contrast to the optimistic approach.
 	%	Also inspired by Berrendorf \cite{Berrendorf:14} is the idea to remove atomics altogether. 
 	%	This results in a race condition where additional work for the next level is created, as some vertices might be added to the neighbours multiple times. 
 	%	However, expensive atomics are omitted, which results in a trade-off between the additional time from the added work and the faster runtime by leaving out the CAS. 
@@ -371,9 +371,9 @@
 		% using only implicit OMP barrier for level synchronization. switching between two TBB parallelqueue frontiers
 
 		\mypar{TBB Concurrent Queue}
-		To compare all synchronization approaches we also looked into concurrent data structures to solve the synchronisation problem of the algorithm.
+		To compare all synchronization approaches we also looked into concurrent data structures to solve the synchronization problem of the algorithm.
 		The design and implementation of such a data structure is a subject of its own and beyond the scope of this paper. Therefore, instead of focusing on designing or implementing a concurrent queue ourselves, we used the one in the Intel Threading Building Blocks library (Intel TBB version 4.3).
-		%We found that using two concurrent queues for the neighbour and frontier and swapping them between levels in the same way as in the above mentioned implementations diminishes the time saved by not using explicit synchronisation significantly.
+		%We found that using two concurrent queues for the neighbour and frontier and swapping them between levels in the same way as in the above mentioned implementations diminishes the time saved by not using explicit synchronization significantly.
 		%To perform better we implemented a version that uses two concurrent queues that instead of swapping just switch roles from frontier to neighbour and vice versa after each level.
 		%This way the swapping in the serial part of the implementation is replaced by a few if-statements while essentially doing the same algorithm.
 		Our implementation uses two concurrent queues that switch roles from frontier to neighbour and vice versa after each level to avoid having a costly swap operation in the sequential part between levels.
@@ -453,7 +453,7 @@
 		
 		Switching to the Euler system with a higher number of maximal threads, we observe quite surprising results, see Fig. \ref{fig:eulerbig}.
 		The biggest surprise is that for the Million graph, none of the implemented algorithms manages to be better than a simple sequential run.
-		Reasons for this might be the small number of edges in this graph limiting the potential for parallel execution to a point where the cost for doing any synchronisation or the additional work created to circumvent synchronisation on this system is too great.
+		Reasons for this might be the small number of edges in this graph limiting the potential for parallel execution to a point where the cost for doing any synchronization or the additional work created to circumvent synchronization on this system is too great.
 
 		Supporting this theory is the fact that in Fig. \ref{fig:eulerkron} we can see that for a more connected graph a few algorithms are an improvement in comparison to a sequential run.
 		The main result from this experiment is the observation that any version that relies on \verb+OMP critical+, even if only to manipulate the used data structure, does not perform in a useful way.
@@ -465,7 +465,7 @@
 		The same observation, though in less extremely, can be made for the Kronecker graph in Fig. \ref{fig:einsteinkron}, where the TBB concurrent queue is already much sooner outperformed by the Optimistic algorithm.
 
 
-	\section{Discussion}\label{sec:disc} % Roughtly column. + ~1-2 references + 1 table
+	\section{Discussion}\label{sec:disc} % Roughly column. + ~1-2 references + 1 table
 		We now provide a analysis of the results of the experimental evaluation of Optimistic BFS and the other variants of parallel BFS used during our study to achieve additional insight on the base of the conducted study.
 		We would like to note that the study can't be considered as complete, and additional experiments and analysis need to be conducted to achieve clear understanding of all the properties of the proposed algorithm.  
 		Particularly, weak scaling experiments need to be conducted and dependencies of BFS performance on the target environment properties and target graph properties should be evaluated. 
@@ -495,7 +495,7 @@
 		It also would be interesting to figure out the relationships of the performance provided by optimistic BFS depending of different graph characteristics and hence find out for what class of graphs it would be most optimal.
 		Furthermore, it will be beneficial to evaluate weak scaling properties of Optimistic BFS.
 	
-	\bibliographystyle 	{IEEEbib} % Roughtly column. (10-15 references).
+	\bibliographystyle 	{IEEEbib} % Roughly column. (10-15 references).
 	\bibliography 		{bibl_conf}
 \end{document}
 
