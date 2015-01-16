@@ -164,7 +164,6 @@
 		
 		In addition to this, we have compared a number of different approaches based on different synchronization primitives and techniques, and load balancing strategies.
 	
-	
 	\section{Design and implementation}\label{sec:deim} % Roughly page + half a column. + 1 code snippet
 		The goal of our efforts is to achieve the most efficient and scalable algorithm of parallel BFS for Shared Memory Architectures. 
 
@@ -181,7 +180,7 @@
 						
 			\textbf{Avoidance of synchronization.}
 			Synchronization is an expensive but necessary component of almost all parallel algorithms.
-			It usually takes many CPU cycles and thus reduces scalability.
+			It usually takes many CPU cycles and reduces scalability.
 			Our main design direction was figuring out the cheapest scheme of synchronization while still providing consistency.
 			
 			
@@ -244,7 +243,7 @@
 			It is a level by level sequential top-down walk through the graph, where in each iteration we discover all unvisited neighbours of the vertices in the current level.
 			
 			One of the core design decisions is related to memory management.
-			The classic approach employs dynamic data structures like lists and queues which are used for the member vertices of the current level.
+			The classic approach employs dynamic data structures like lists and queues which are used for tracking vertices of the current and next levels.
 			This approach is poorly suited for efficient parallelism, because it explicitly introduces a synchronization point and can introduce implicit synchronization points via memory chunk allocation / deallocation. 
 			Instead we propose to use raw memory chunks allocated and freed only once in the prologue and epilogue of the algorithm.
 			Our approach utilizes memory allocated in 3 chunks, each of which is of size $number\_of\_vertices$ bytes:
@@ -281,18 +280,24 @@
 		In all cases, scalability measurements were limited by the number of physical processing elements present in the test environment (including processing elements delivered by Hyper-Threading technology).
 		We used the following testbeds:
 		\begin{itemize}
-			\item \textbf{Euler}. Intel Xeon E5-2697v2 processor (2.7 GHz nominal, 3.0-3.5 GHz peak, HT enabled) with 12 physical and 24 logical cores. GNU GCC compiler Version 4.8.2 with -O2 flag. 
-			\item \textbf{Einstein}. Intel Xeon Phi Coprocessor 7120 (1.238 GHz base frequency, 1.333 GHz peak) with 61 physical cores. 16 GB of memory.
-			Intel ICC compiler Version 15.0.0.090 Build 20140723 (with -O2 flag).
+			\item \textbf{Euler}. Intel Xeon E5-2697v2 processor (2.7 GHz nominal, 3.0-3.5 GHz peak, HT enabled) with 12 physical and 24 logical cores.
+			12 Gb of memory. 
+			Running Linux 2.6.32-504.1.3.el6.x86.64. GNU GCC compiler Version 4.8.2 (with -O2 flag).
+			\item \textbf{Einstein}. Intel Xeon Phi Coprocessor 7120 (1.238 GHz base frequency, 1.333 GHz peak) with 61 physical cores. 
+			16 GB of memory.
 			Running on Linux 2.6.32-431.el6.x86.64.
-			\item \textbf{AMD}. AMD FX-8350 processor (4 GHz nominal, 4.2 GHz peak) with 8 physical cores and 8 GB of memory. Microsoft Windows Server 2003 with PAE enabled. Microsoft Visual Studio 2008 Professional with  Microsoft C++ compiler 9.00.30729.01 with full fast code focused optimization enabled.
+			Intel ICC compiler Version 15.0.0.090 Build 20140723 (with -O2 flag).
+			\item \textbf{AMD}. AMD FX-8350 processor (4 GHz nominal, 4.2 GHz peak) with 8 physical cores.
+			8 GB of memory. 
+			Microsoft Windows Server 2003 with PAE enabled. 
+			Microsoft Visual Studio 2008 Professional with  Microsoft C++ compiler 9.00.30729.01 (full fast code focused optimization enabled).
 		\end{itemize}
 
 		Graphs, depending on their source and use, can have widely different properties.
 		To account for this, real world graphs and specific synthetic graphs provided by the University of Florida Sparse Matrix Collection \cite{SparseMatrixCollection} were used during the experiments.
 		The mentioned synthetic graphs are mostly so called Kronecker graphs \cite{Leskovec:2010:KGA:1756006.1756039}, which are generative network graphs that obey the main static network patterns observed in real networks.
 		Especially the small-world property is worth mentioning since it provides a reasonable assumption that a given node in a network has a large enough neighbourhood so that a parallel BFS can be useful.		
-		Our experiments include two different graphs:
+		Our experiments use two different graphs:
 		\begin{itemize}
 			\item \textbf{Million}. A huge real world graph containing 1 million vertices and $\sim$3 million edges.
 			\item \textbf{Kronecker}. A graph used in the DIMACS10 Challenge. Consists of $\sim$500k vertices and $\sim$21 million edges.
