@@ -19,6 +19,16 @@
 
 \usepackage{float}
 
+\hyphenation{at-temp-ting}
+\hyphenation{avoi-ding}
+\hyphenation{com-pu-ter}
+%\hyphenation{do-esn}
+\hyphenation{en-abled}
+\hyphenation{no-mi-nal}
+\hyphenation{num-ber}
+%\hyphenation{pe-ak}
+\hyphenation{phy-si-cal}
+\hyphenation{There}
 \hyphenation{tra-ver-sal}
 
 \graphicspath{{figures/}} % Relative path to figure sources
@@ -134,7 +144,7 @@
 
 	\section{Related work} \label{sec:rewo} % Roughly column. + ~8 references.
 		BFS is not an easy candidate for parallelization.
-		It is inherently memory intensive and has poor spatial locality which introduces significant performance loss on today's computer systems with the growing gap between CPU performance, memory performance and increasing memory latencies.
+		It is inherently memory intensive and has poor spatial locality which introduces significant performance loss on today's computer systems with the growing gap between CPU and memory performance and increasing memory latencies.
 		Therefore scalability of a parallel version of BFS will be bound by the performance characteristics of the memory subsystem of the target computer system. 
 		Nevertheless, intensive use of BFS in a wide range of applications creates a high interest in the most efficient and scalable versions of parallel BFS.
 		As a result, a number of papers were published in this field. 
@@ -151,7 +161,7 @@
 		If the operations change the state to the same value if executed multiple times, no race condition is created, but there is a trade-off between additional work and time saving due to synchronization.
 		In the case of BFS, any unvisited vertex may get added multiple times to the neighbourhood data structure.		
 	
-		For the final proposed technique we go the way of avoiding atomic operations and synchronization within levels at all.
+		For our final proposed technique we go the way of avoiding atomic operations and synchronization within levels at all.
 		The only synchronization point left in our algorithm is an implicit barrier between the processing of different levels.
 		
 		In addition to this, we have compared a number of different approaches based on different synchronization primitives and techniques and load balancing strategies. %TODO
@@ -164,7 +174,7 @@
 			There are three main directions of performance boosting in the way of parallelizing BFS.
 			
 			\textbf{Improvement of cache utilization.}
-			Careful cache-aware algorithm design can introduce significant performance benefits on the today's SMA computer systems.
+			Careful cache-aware algorithm design can introduce significant performance benefits on today's SMA computer systems.
 			Unfortunately, BFS works with a data set with inherently poor spatial locality. 
 			
 			\textbf{Load balancing improvement.} 
@@ -242,7 +252,7 @@
 			The classic approach employs dynamic data structures like lists and queues which are used for the member vertices of the current level.
 			This approach is poorly suited for efficient parallelism, because it explicitly introduces a synchronization point and can introduce implicit synchronization points via memory chunk allocation / deallocation. 
 			Instead we propose to use raw memory chunks allocated and freed only once in the prologue and epilogue of the algorithm.
-			Our approach utilizes $3 \cdot number\_of\_the\_vertices$ bytes of memory allocated in 3 equal chunks:
+			Our approach utilizes memory allocated in 3 chunks, each of which with size $number\_of\_vertices$ bytes:
 			\begin{enumerate}
 				\item Flag array tracking visited vertices.
 				\item Flag array holding all vertices of the current level.
@@ -271,16 +281,16 @@
 			
 			
 	\section{Experiments}\label{sec:expe} % Roughly two pages - half a column. + 4 plots
-		We present experimental results to demonstrate the performance gains that can be realized with Optimistic BFS.
+		We present experimental results to demonstrate the performance gains that can be realized with the use of Optimistic BFS.
 		There are three experimental testbeds used in the experiments. 
 		In all cases, scalability measurements were limited by the number of physical processing elements present in the test environment (including processing elements delivered by Hyper-Threading technology).
 		We used the following testbeds:
 		\begin{itemize}
 			\item \textbf{Euler}. Intel Xeon E5-2697v2 processor (2.7 GHz nominal, 3.0-3.5 GHz peak, HT enabled) with 12 physical and 24 logical cores. GNU GCC compiler version 4.8.2 with -O2 flag. 
-			\item \textbf{Einstein}. Intel Xeon Phi Coprocessor 7120 (1.238 GHz base frequency, 1.333 GHz max turbo frequency) with 61 physical cores. 16 Gb of memory.
+			\item \textbf{Einstein}. Intel Xeon Phi Coprocessor 7120 (1.238 GHz base frequency, 1.333 GHz peak) with 61 physical cores. 16 Gb of memory.
 			Intel ICC compiler Version 15.0.0.090 Build 20140723 (with -O2 flag).
 			Running on Linux 2.6.32-431.el6.x86.64.
-			\item \textbf{AMD}. AMD FX-8350 (4GHz nominal, 4.2GHz peak) with 8 physical cores. 8 Gb of memory. Microsoft Windows Server 2003 with PAE enabled. Microsoft Visual Studio 2008 Professional with  Microsoft C++ compiler 9.00.30729.01 with full optimization enabled.
+			\item \textbf{AMD}. AMD FX-8350 processor (4 GHz nominal, 4.2 GHz peak) with 8 physical cores and 8 Gb of memory. Microsoft Windows Server 2003 with PAE enabled. Microsoft Visual Studio 2008 Professional with  Microsoft C++ compiler 9.00.30729.01 with full fast code focused optimization enabled.
 		\end{itemize}
 
 		Graphs, depending on their source and use, can have widely different properties.
@@ -290,11 +300,11 @@
 		Our experiments include two different graphs:
 		\begin{itemize}
 			\item \textbf{Million}. A huge real world graph includes 1 million vertices and $\sim$3 million edges.
-			\item \textbf{Kronecker}. A Kronecker graph used in the DIMACS10 Challenge. Consists of $\sim$500k vertices and $\sim$21 million edges.
+			\item \textbf{Kronecker}. A graph used in the DIMACS10 Challenge. Consists of $\sim$500k vertices and $\sim$21 million edges.
 		\end{itemize}
 		
 		Experiments methodology is next. 
-		For each pair of graph and platform, the complete distance map was built for 15 root vertices equally distributed on the entire graph using each of the BFS alternatives.
+		For each pair of platform and graph the complete distance map was built for 15 root vertices equally distributed on the entire graph using each of the BFS alternatives.
 		Each experiment was repeated for different numbers of parallel threads starting from 1 and limited by the number of physical processing elements provided by the testbed.
 		Minimal, maximal and average processing time were computed.
 		
@@ -311,7 +321,7 @@
 		\mypar{Top-down CAS}
 		% topdownCAS
 		% using CAS (check visited) + OMP critical section (add to frontier), also vector frontier. Idea from paper by Berrendorf
-		Improved naive implementation, which attempts to get rid of the critical section by using an atomic CAS operation, to check whether a vertex was visited and to set the correct distance. 
+		Improved naive implementation attempting to get rid of the critical section by using an atomic CAS operation, to check whether a vertex was visited and to set the correct distance. 
 		In addition to the atomic, this variant uses a local neighbourhood data structure (standard vector) to be able to work without a critical section. 
 		Only at the end of each level a lock OMP lock is necessary to combine the local neighbourhoods to a global one. 
 		This is an idea adapted from Berrendorf \cite{Berrendorf:14}.
