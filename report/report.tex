@@ -283,8 +283,8 @@
 			\item \textbf{AMD}. AMD FX-8350 (4GHz nominal, 4.2GHz peak) with 8 physical cores. 8 Gb of memory. Microsoft Windows Server 2003 with PAE enabled. Microsoft Visual Studio 2008 Professional with  Microsoft C++ compiler 9.00.30729.01 with full optimization enabled.
 		\end{itemize}
 
-		Graphs depending on their source and use, can have widely different properties.
-		To account for this, the real world graphs and specific synthetic graphs provided by the University of Florida Sparse Matrix Collection \cite{SparseMatrixCollection} was used during experiments.
+		Graphs, depending on their source and use, can have widely different properties.
+		To account for this, real world graphs and specific synthetic graphs provided by the University of Florida Sparse Matrix Collection \cite{SparseMatrixCollection} were used during experiments.
 		The mentioned synthetic graphs are mostly so called Kronecker graphs \cite{Leskovec:2010:KGA:1756006.1756039}, which are generative network graphs that obey the main static network patterns observed in real networks.
 		Especially the small-world property is worth mentioning since it provides a reasonable assumption that a given node in a network has a large enough neighbourhood so that a parallel BFS can be useful.		
 		Our experiments include two different graphs:
@@ -294,12 +294,12 @@
 		\end{itemize}
 		
 		Experiments methodology is next. 
-		For each pair of graph and platform the complete distance map was built for 15 root vertices equally distributed on the entire graph using each of the BFS alternatives.
-		Each experiment was repeated for diffent number of parallel threads in the rage from 1 and limiting by the number of physical processing elements provided by testbed.
-		Minimal, maximal and average processing time was computed.
+		For each pair of graph and platform, the complete distance map was built for 15 root vertices equally distributed on the entire graph using each of the BFS alternatives.
+		Each experiment was repeated for different numbers of parallel threads starting from 1 and limited by the number of physical processing elements provided by the testbed.
+		Minimal, maximal and average processing time were computed.
 		
 		\subsection{Alternative parallel BFS methods}\label{sec:approaches}
-		Many different avlternative BFS methods was considered during a study and evaluated during experiments.
+		Many different alternative BFS methods were considered during a study and evaluated in experiments.
 		All our implementations are based on OpenMP and most of them are based on a simple top-down algorithm. 
 
 		\mypar{Top-down naive}
