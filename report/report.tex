@@ -109,7 +109,7 @@
 	\maketitle
 
 	\begin{abstract} 
-		Breadth-first search (BFS) is a one of the central graph traversal algorithms with many industrial applications.
+		Breadth-first search (BFS) is one of the central graph traversal algorithms with many industrial applications.
 		Wide dissemination of the computer systems with shared memory architecture (SMA) asks for the most efficient and scalable implementation of BFS for such environments. 
 		In this paper, we analyse different variants of parallel BFS with the goal to define the most efficient approach to BFS parallelization.
 		We present the design of the most promising approach to the implementation of BFS on SMA, which we call optimistic, based on the idea of synchronization avoidance.
@@ -247,7 +247,7 @@
 			The classic approach employs dynamic data structures like lists and queues which are used for the member vertices of the current level.
 			This approach is poorly suited for efficient parallelism, because it explicitly introduces a synchronization point and can introduce implicit synchronization points via memory chunk allocation / deallocation. 
 			Instead we propose to use raw memory chunks allocated and freed only once in the prologue and epilogue of the algorithm.
-			Our approach utilizes memory allocated in 3 chunks, each of which of size $number\_of\_vertices$ bytes:
+			Our approach utilizes memory allocated in 3 chunks, each of which is of size $number\_of\_vertices$ bytes:
 			\begin{enumerate}
 				\item Flag array tracking visited vertices.
 				\item Flag array holding all vertices of the current level.
