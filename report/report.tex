@@ -145,7 +145,7 @@
 	
 		\section{Related work} \label{sec:rewo} % Roughly column. + ~8 references.
 		BFS is not an easy candidate for parallelization.
-		It is inherently memory intensive and has poor spatial locality which introduces significant performance loss on todays computer systems with the growing gap between CPU performance, memory performance and increasing memory latencies.
+		It is inherently memory intensive and has poor spatial locality which introduces significant performance loss on today's computer systems with the growing gap between CPU performance, memory performance and increasing memory latencies.
 		Therefore scalability of a parallel version of BFS will be bound by the performance characteristics of the memory subsystem of the target computer system. 
 		Nevertheless, intensive use of BFS in a wide range of applications creates a high interest in the most efficient and scalable versions of parallel BFS.
 		As a result, a number of papers were published in this field. 
@@ -162,7 +162,7 @@
 		If the operations change the state to the same value if executed multiple times, no race condition is created, but there is a trade-off between additional work and time saving due to synchronization.
 		In the case of BFS, any unvisited vertex may get added multiple times to the neighbourhood data structure.		
 	
-		For our final proposed technique we go the way of avoiding atomic operations and synchronization within levels at all.
+		For the final proposed technique we go the way of avoiding atomic operations and synchronization within levels at all.
 		The only synchronization point left in our algorithm is an implicit barrier between the processing of different levels.
 		
 		In addition to this, we have compared a number of different approaches based on different synchronization primitives and techniques and load balancing strategies. %TODO
@@ -241,7 +241,7 @@
 
 		
 		
-			Our proposed algorithm was designed for the environment of OpenMP and due to this employs a data-parallelism approach. 
+			Our proposed algorithm \ref{alg:optbfs} was designed for the environment of OpenMP and due to this employs a data-parallelism approach. 
 			It accepts two input parameters: the graph description and the index of the root vertex.
 			The graph description is a list of lists, in which each top-level list denotes one of the graph vertices and the bottom level list enumerates all neighbours of the appropriate vertex, thus denoting all edges connected to it.
 			The algorithm returns a distance map for the specified root vertex.
