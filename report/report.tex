@@ -253,7 +253,7 @@
 			The classic approach employs dynamic data structures like lists and queues which are used for the member vertices of the current level.
 			This approach is poorly suited for efficient parallelism, because it explicitly introduces a synchronization point and can introduce implicit synchronization points via memory chunk allocation / deallocation. 
 			Instead we propose to use raw memory chunks allocated and freed only once in the prologue and epilogue of the algorithm.
-			Our approach utilize $3 \cdot number\_of\_the\_vertices$ bytes of memory allocated in 3 equal chunks:
+			Our approach utilizes $3 \cdot number\_of\_the\_vertices$ bytes of memory allocated in 3 equal chunks:
 			\begin{enumerate}
 				\item Flag array tracking visited vertices.
 				\item Flag array holding all vertices of the current level.
@@ -276,8 +276,8 @@
 			The most important point in this algorithm is that it doesn't use any synchronization in the body of the parallel for loop.
 			Therefore, it is prone to a race condition when two or more concurrently processed vertices from the current level lead to handling a vertex which is a neighbour of both.
 			But in fact, this is a false race condition, because firstly, for each iteration, the algorithm separates the data that will be read and the data which will be updated, and secondly it provides a guarantee that the same memory locations will be updated to the same values.
-			As a result consistency of the data is preserved during entire graph processing time and guarantees consistency of results even without use of explicit synchronization.
-			On the other hand such false race conditions lead to possible waste of work done due to the concurrent processing of the same neighbour vertices.
+			As a result consistency of the data is preserved during the entire graph processing time and consistency of the results is guaranteed even without use of explicit synchronization.
+			On the other hand such false race conditions lead to possible waste of work due to the concurrent processing of the same neighbour vertices by multiple vertices in the current level.
 			Due to this we call this approach optimistic, because each iteration is made in the hope that its result will be valuable to the overall progress.  
 			
 			
@@ -420,7 +420,7 @@
 %		\end{figure}
 
 
-		In the following plots resulting from our experiments, not all version or approaches mentioned before appear on each of the test platforms. 
+		In the following plots resulting from our experiments, not all versions or approaches mentioned before appear on each of the test platforms. 
 		The reason behind this is that some are too slow on one test environment while doing okay on another one.
 		Versions omitted from a plot can therefore be assumed slower than any of the shown algorithms.
 		
@@ -437,7 +437,7 @@
 		
 		Switching to the Euler system with a higher number of maximal threads, we observe quite surprising results, see Fig. \ref{fig:eulerbig}.
 		The biggest surprise is that for the Million graph, none of the implemented algorithms manages to be better than a simple sequential run.
-		Reasons for this might be the small number of edges in this graph limiting the potential for parallel execution to a point where the cost for doing any synchronization or the additional work created to circumvent synchronization on this system is too great.
+		Reasons for this might be the small number of edges in this graph limiting the potential for parallel execution to a point where the cost of doing any synchronization or the additional work created to circumvent synchronization on this system is too great.
 
 		Supporting this theory is the fact that in Fig. \ref{fig:eulerkron} we can see that for a more connected graph a few algorithms are an improvement in comparison to a sequential run.
 		The main result from this experiment is the observation that any version that relies on \verb+OMP critical+, even if only to manipulate the used data structure, does not perform in a useful way.
@@ -446,7 +446,7 @@
 		Lastly, on the Einstein system, where the Intel TBB library was available, we can compare the performance of a concurrent data structure approach with our Optimistic algorithm.
 		In Fig. \ref{fig:einsteinbig} we can notice that on this system, it requires a lot more threads for the Optimistic approach to become useful. On the other hand, the TBB concurrent queue performs well for a limited number of threads, after which it loses performance with increasing number of threads.
 		
-		The same observation, though in less extremely, can be made for the Kronecker graph in Fig. \ref{fig:einsteinkron}, where the TBB concurrent queue is already much sooner outperformed by the Optimistic algorithm.
+		The same observation although less extremely can be made for the Kronecker graph in Fig. \ref{fig:einsteinkron}, where the TBB concurrent queue is much sooner outperformed by the Optimistic algorithm.
 
 
 	\section{Discussion}\label{sec:disc} % Roughly column. + ~1-2 references + 1 table
@@ -455,7 +455,7 @@
 		Particularly, weak scaling experiments need to be conducted and dependencies of BFS performance on the target environment properties and target graph properties should be evaluated. 
 		
 		%Using the results of our experiments, we determined that the performance of a particular BFS implementation heavily depends on two major groups of factors. <- unnecessary
-		One of the very general conclusions from the our study is that performance characteristics of memory intensive parallel algorithms depend heavily on the specifics of the target environment, i.e. its underlying hardware architecture, operating system and compiler.
+		One of the very general conclusions from our study is that performance characteristics of memory intensive parallel algorithms depend heavily on the specifics of the target environment, i.e. its underlying hardware architecture, operating system and compiler.
 		%To understand what components of the environment play a major role on the algorithm performance characteristics, additional experiments need to be conducted. <- mentioned just a paragraph before
 		What we can see is that even on so similar hardware platforms like the AMD and Intel based implementations of an IA-32 architecture, the algorithm can demonstrate significantly different behaviour, which is surprising.
 		What we can expect is that a parallel BFS algorithm which is optimal for all SMA architectures cannot exist at all and an algorithm must be developed and evaluated for a particular environment to achieve the best results.
