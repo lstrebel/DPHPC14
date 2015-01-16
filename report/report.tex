@@ -272,12 +272,12 @@
 			In each iteration, the algorithm processes only the vertices specified by the flag array of the current level vertices.
 			For such vertices, the algorithm updates the distance map, the flag array of visited vertices and the flag array for the next level of all unvisited neighbour vertices.
 			
-			The most important point in this algorithm is that it doesn't use any synchronization in the body of the parallel for loop.
+			The most important point in this algorithm is that no synchronization is used in the body of the parallel for loop.
 			Therefore, it is prone to a race condition when two or more concurrently processed vertices from the current level lead to handling a vertex which is a neighbour of both.
 			But in fact, this is a false race condition, because firstly, for each iteration, the algorithm separates the data that will be read and the data which will be updated, and secondly it provides a guarantee that the same memory locations will be updated to the same values.
-			As a result consistency of the data is preserved during the entire graph processing time and consistency of the results is guaranteed even without use of explicit synchronization.
-			On the other hand such false race conditions lead to possible waste of work due to the concurrent processing of the same neighbour vertices by multiple vertices in the current level.
-			Due to this we call this approach optimistic, because each iteration is made in the hope that its result will be valuable to the overall progress.  
+			As a result, consistency of the data is preserved during the entire graph processing time and consistency of the results is guaranteed even without use of explicit synchronization.
+			On the other hand, such false race conditions lead to possible waste of work due to the concurrent processing of the same neighbour vertices by multiple vertices in the current level.
+			Due to this, we call this approach optimistic, as each iteration is made in the hope that its result will be valuable to the overall progress.  
 			
 			
 	\section{Experiments}\label{sec:expe} % Roughly two pages - half a column. + 4 plots
